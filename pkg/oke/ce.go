@@ -15,8 +15,8 @@ type Oke struct {
 	Ctx           context.Context
 }
 
-//ClusterDetail is the struct to represent cluster on the clt
-type ClusterDetail struct {
+//ClusterInfo is the struct to represent cluster on the clt
+type ClusterInfo struct {
 	Name        string
 	ID          string
 	Status      string
@@ -33,35 +33,6 @@ type nodePool struct {
 	nodeShape   string
 	kubeVersion string
 	subnetIds   []string
-}
-
-func (o Oke) rawAllClusters() ([]containerengine.ClusterSummary, error) {
-
-	lcr := containerengine.ListClustersRequest{
-		CompartmentId: common.String(o.CompartmentID),
-	}
-
-	response, err := o.Client.ListClusters(o.Ctx, lcr)
-	if err != nil {
-		return []containerengine.ClusterSummary{}, err
-	}
-
-	return response.Items, nil
-}
-
-func (o Oke) getClusterByName(clusterName string) (containerengine.ClusterSummary, error) {
-
-	lcr := containerengine.ListClustersRequest{
-		CompartmentId: common.String(o.CompartmentID),
-		Name:          common.String(clusterName),
-	}
-
-	response, err := o.Client.ListClusters(o.Ctx, lcr)
-	if err != nil {
-		return containerengine.ClusterSummary{}, err
-	}
-
-	return response.Items[0], nil
 }
 
 func (o Oke) clusterNodePools(clusterID string) ([]nodePool, error) {
@@ -92,34 +63,42 @@ func (o Oke) clusterNodePools(clusterID string) ([]nodePool, error) {
 	return pools, nil
 }
 
-func (o Oke) getClusterByID(clusterID string) (containerengine.Cluster, error) {
+func (o Oke) getClusterByName(clusterName string) ([]containerengine.ClusterSummary, error) {
 
-	ceRequest := containerengine.GetClusterRequest{
-		ClusterId: common.String(clusterID),
+	lcr := containerengine.ListClustersRequest{
+		CompartmentId: common.String(o.CompartmentID),
+		Name:          common.String(clusterName),
 	}
 
-	resp, err := o.Client.GetCluster(o.Ctx, ceRequest)
-	if err != nil {
-		return containerengine.Cluster{}, err
+	response, err := o.Client.ListClusters(o.Ctx, lcr)
+	switch {
+	case err != nil:
+		return []containerengine.ClusterSummary{}, err
+	case len(response.Items) == 0:
+		return []containerengine.ClusterSummary{}, fmt.Errorf("No cluster found with name: %s", clusterName)
 	}
 
-	return resp.Cluster, nil
+	return response.Items, nil
 }
 
-//getAllClusters returns all cluster in a given compartment
-func (o Oke) getAllClusters() ([]ClusterDetail, error) {
+//GetAllClusters returns all cluster in a given compartment
+func (o Oke) GetAllClusters() ([]ClusterInfo, error) {
 
-	all, err := o.rawAllClusters()
-	if err != nil {
-		return []ClusterDetail{}, nil
+	lcr := containerengine.ListClustersRequest{
+		CompartmentId: common.String(o.CompartmentID),
 	}
 
-	var output []ClusterDetail
-	for _, c := range all {
+	response, err := o.Client.ListClusters(o.Ctx, lcr)
+	if err != nil {
+		return []ClusterInfo{}, err
+	}
+
+	var output []ClusterInfo
+	for _, c := range response.Items {
 		//not sure what to do when getting an error here
 		np, _ := o.clusterNodePools(*c.Id)
 
-		cluster := ClusterDetail{
+		cluster := ClusterInfo{
 			Name:        *c.Name,
 			ID:          *c.Id,
 			Status:      fmt.Sprintln(c.LifecycleState),
@@ -132,4 +111,23 @@ func (o Oke) getAllClusters() ([]ClusterDetail, error) {
 		output = append(output, cluster)
 	}
 	return output, nil
+}
+
+//DeleteCluster to remove any cluster on a given compartment
+func (o Oke) DeleteCluster(clusterName string) error {
+
+	cluster, err := o.getClusterByName(clusterName)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := o.Client.DeleteCluster(o.Ctx, containerengine.DeleteClusterRequest{ClusterId: cluster[0].Id})
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.RawResponse.Status != "200" {
+		return fmt.Errorf("Unable to delete selected cluster")
+	}
+	return nil
 }
