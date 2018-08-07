@@ -1,9 +1,11 @@
-package util
+package oke
 
 import (
 	"os"
 
 	"github.com/oracle/oci-go-sdk/common"
+	"github.com/oracle/oci-go-sdk/containerengine"
+	"github.com/oracle/oci-go-sdk/core"
 )
 
 //OciUser required connection arguments
@@ -62,4 +64,24 @@ func (cfg Config) Load() (common.ConfigurationProvider, error) {
 		return common.DefaultConfigProvider(), nil
 
 	}
+}
+
+//OkeClient provides connection to Container Engine service
+func OkeClient(config common.ConfigurationProvider) (containerengine.ContainerEngineClient, error) {
+
+	client, err := containerengine.NewContainerEngineClientWithConfigurationProvider(config)
+	if err != nil {
+		return containerengine.ContainerEngineClient{}, err
+	}
+	return client, nil
+}
+
+//VcnClient creates a connection to Oracle virtual network
+func VcnClient(config common.ConfigurationProvider) (core.VirtualNetworkClient, error) {
+
+	client, err := core.NewVirtualNetworkClientWithConfigurationProvider(config)
+	if err != nil {
+		return core.VirtualNetworkClient{}, err
+	}
+	return client, nil
 }

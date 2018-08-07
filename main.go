@@ -1,28 +1,40 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"os"
 
-	"github.com/davejfranco/okectl/oke"
+	"github.com/davejfranco/okectl/pkg/oke"
+	"github.com/davejfranco/okectl/pkg/util"
 )
 
 func main() {
+	OkeTest()
+}
 
-	c, err := oke.NewDefaultClient()
+func OkeTest() {
+
+	//user := util.OciUser{KeyPassphrasse: ""}
+	c := util.Config{
+		Path:    "~/.oci/configProfile",
+		Profile: "DEV",
+	}
+	//c := util.Config{}
+	config, err := c.Load()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
+	}
+	ceClient, err := util.OkeClient(config)
+	if err != nil {
+		fmt.Errorf("Error: %s", err)
 	}
 
-	client := oke.NewClient{Client: c}
-	compartmentid := "ocid1.compartment.oc1..aaaaaaaan3ck32sx7mhiioxoxnpwtzcziyqzqi5pftawcnql47zvabbglgaa"
-	r, err := client.GetAllClusters(compartmentid)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	test := oke.Oke{
+		Client:        &ceClient,
+		CompartmentID: "ocid1.compartment.oc1..aaaaaaaan3ck32sx7mhiioxoxnpwtzcziyqzqi5pftawcnql47zvabbglgaa",
+		Ctx:           context.Background(),
 	}
 
-	fmt.Println(r)
+	oke.PrintAllClusters(test)
 
 }
