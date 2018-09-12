@@ -16,7 +16,7 @@ type Oke struct {
 }
 
 //ClusterInfo is the struct to represent cluster on the clt
-type ClusterInfo struct {
+type Cluster struct {
 	Name        string
 	ID          string
 	Status      string
@@ -26,16 +26,35 @@ type ClusterInfo struct {
 	Created     string
 }
 
-type nodePool struct {
-	id          string
-	name        string
-	imageID     string
-	nodeShape   string
-	kubeVersion string
-	subnetIds   []string
+//Check if kubernetes version si s valid one
+func (o Oke) validKubeVersion(version string) bool {
+
+	validVersions, err := o.clusterAvailableVersions()
+	if err != nil {
+		return false
+	}
+	for _, v := range validVersions {
+
+		if version == v {
+			return true
+		}
+	}
+	return false
 }
 
-func (o Oke) clusterNodePools(clusterID string) ([]nodePool, error) {
+//return list of kubernetes available versions
+func (o Oke) clusterAvailableVersions() ([]string, error) {
+
+	req := containerengine.GetClusterOptionsRequest{ClusterOptionId: common.String("all")}
+	options, err := o.Client.GetClusterOptions(o.Ctx, req)
+	if err != nil {
+		return []string{}, err
+	}
+	return options.KubernetesVersions, nil
+}
+
+//NodePool Operations
+func (o Oke) listClusterNodePools(clusterID string) ([]nodePool, error) {
 
 	lreq := containerengine.ListNodePoolsRequest{
 		CompartmentId: common.String(o.CompartmentID),
@@ -82,7 +101,7 @@ func (o Oke) getClusterByName(clusterName string) ([]containerengine.ClusterSumm
 }
 
 //GetAllClusters returns all cluster in a given compartment
-func (o Oke) GetAllClusters() ([]ClusterInfo, error) {
+func (o Oke) GetAllClusters() ([]Cluster, error) {
 
 	lcr := containerengine.ListClustersRequest{
 		CompartmentId: common.String(o.CompartmentID),
@@ -90,15 +109,15 @@ func (o Oke) GetAllClusters() ([]ClusterInfo, error) {
 
 	response, err := o.Client.ListClusters(o.Ctx, lcr)
 	if err != nil {
-		return []ClusterInfo{}, err
+		return []Cluster{}, err
 	}
 
-	var output []ClusterInfo
+	var output []Cluster
 	for _, c := range response.Items {
 		//not sure what to do when getting an error here
-		np, _ := o.clusterNodePools(*c.Id)
+		np, _ := o.listClusterNodePools(*c.Id)
 
-		cluster := ClusterInfo{
+		cluster := Cluster{
 			Name:        *c.Name,
 			ID:          *c.Id,
 			Status:      fmt.Sprintln(c.LifecycleState),
