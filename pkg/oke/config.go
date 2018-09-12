@@ -85,3 +85,13 @@ func VcnClient(config common.ConfigurationProvider) (core.VirtualNetworkClient, 
 	}
 	return client, nil
 }
+
+//ComputeClient given a config provider returns a client for computeclient
+func ComputeClient(config common.ConfigurationProvider) (core.ComputeClient, error) {
+
+	client, err := core.NewComputeClientWithConfigurationProvider(config)
+	if err != nil {
+		return core.ComputeClient{}, err
+	}
+	return client, nil
+}
