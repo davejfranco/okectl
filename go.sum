@@ -1,0 +1,3 @@
+github.com/oracle/oci-go-sdk v1.8.0/go.mod h1:VQb79nF8Z2cwLkLS35ukwStZIg5F66tcBccjip/j888=
+github.com/oracle/oci-go-sdk v14.0.0+incompatible h1:DqmXj/YCn1RLTBO4wKNdZ5lTT6DbhU0ymFYDm6lHZSY=
+github.com/oracle/oci-go-sdk v14.0.0+incompatible/go.mod h1:VQb79nF8Z2cwLkLS35ukwStZIg5F66tcBccjip/j888=
