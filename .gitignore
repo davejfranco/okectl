@@ -1,0 +1,7 @@
+pkg/*/*.tf
+pkg/*/*.tf.json
+pkg/*/*.tfvars
+pkg/*/*.tfstate
+pkg/*/*.tfstate.backup
+pkg/*/.terraform
+
