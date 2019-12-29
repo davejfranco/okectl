@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 )
 
@@ -38,20 +37,4 @@ func (tf *Tfile) Genfile() error {
 	jsonFile.Write(tojson)
 
 	return nil
-}
-
-func main() {
-
-	var res []TField
-
-	oci := TField{"oci": TField{"version": "3.0.0", "region": "us-ashburn-1"}}
-
-	res = append(res, oci)
-
-	tf := Tfile{Provider: res}
-	err := tf.Genfile()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
 }
