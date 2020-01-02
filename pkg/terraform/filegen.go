@@ -7,6 +7,8 @@ import (
 
 const (
 	tfFileName = "maingo.tf.json"
+	k8sVersion = "v1.14.8"
+	sshKeyfile = "~/.ssh/id_rsa.pub"
 )
 
 //Tfile generator struct
@@ -22,7 +24,7 @@ type Tfile struct {
 type TField map[string]interface{}
 
 //Genfile will generate a tf.json file to be use by terraform
-func (tf *Tfile) Genfile() error {
+func (tf Tfile) Genfile() error {
 
 	tojson, err := json.MarshalIndent(tf, "", " ")
 	if err != nil {
