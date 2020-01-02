@@ -37,3 +37,21 @@ func RandomKey() string {
 
 	return str
 }
+
+//HexaMask returns CIDR mask in format /16 from ffff0000 format
+func HexaMask(hexa string) string {
+
+	n := strings.Count(hexa, "0")
+
+	switch {
+	case n == 2:
+		return string("24")
+	case n == 4:
+		return string("16")
+	case n == 6:
+		return string("8")
+	case n == 0:
+		return string("32")
+	}
+	return ""
+}
