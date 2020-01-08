@@ -17,11 +17,11 @@ const (
 	Digits = "0123456789"
 
 	// KeyLength is the length of the Key
-	KeyLength = 10
+	//KeyLength = 10
 )
 
 //RandomKey returns a ramdom alphanumeric string
-func RandomKey() string {
+func RandomKey(keylength int) string {
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -30,7 +30,7 @@ func RandomKey() string {
 		Digits)
 
 	var b strings.Builder
-	for i := 0; i < KeyLength; i++ {
+	for i := 0; i < keylength; i++ {
 		b.WriteRune(chars[rand.Intn(len(chars))])
 	}
 	str := b.String()
