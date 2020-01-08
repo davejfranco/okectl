@@ -21,58 +21,39 @@ const (
 	rtlb       = "oke-lb-rt-"
 )
 
-//Subnet describe a subnet to be use in vcn
-type subnet struct {
-	cidr          string
-	vcnID         string
-	rtID          string
+//Network components
+type networkVCN struct {
+	vcn, igw, ngw Resource
+	publicOnly    bool
 	compartmentID string
+	subnets       []subnet
+	rtables       []rtable
 }
 
-//ValidCIDR will return error if a subnet is not part of the VCN CIDR
-// func (sub subnet) validCIDR(vcnCIDR string) error {
-// 	return nil
-// }
-
-//Create subnet fields
-func (sub subnet) create() (Field, error) {
-
-	if sub.cidr == "" || sub.vcnID == "" || sub.rtID == "" || sub.compartmentID == "" {
-		return Field{}, errors.New("One or more subnet fields are empty")
-	}
-
-	return Field{"vcn_id": sub.vcnID,
-		"cidr_block":     "10.0.1.0/24",
-		"compartment_id": sub.compartmentID}, nil
-}
-
-//Vcn network
 type vcn struct {
-	name          string
-	cidr          string
-	compartmentID string
+	name, cidr, compartmentID string
 }
 
 //Create VCN Resource
-func (v vcn) create() (Field, error) {
+func (v vcn) create() (Resource, error) {
 
-	if v.name == "" {
-		v.name = vcnName + util.RandomKey()
+	name := vcnName + util.RandomKey(4)
+	if !validVcnCIDR(v.cidr) {
+		return Resource{}, errors.New("Invalid CIDR for the VCN")
 	}
 
-	if !v.validVcnCIDR() {
-		return Field{}, errors.New("Invalid CIDR for the VCN")
-	}
+	vcn := Resource{Type: "oci_core_vcn",
+		Name: "vcn", Rfield: Field{"cidr_block": v.cidr,
+			"compartment_id": v.compartmentID,
+			"display_name":   name}}
 
-	return Field{"cidr_block": v.cidr,
-		"compartment_id": v.compartmentID,
-		"display_name":   v.name}, nil
+	return vcn, nil
 }
 
 //ValidVcnCIDR that CIDR provided is a valid one
-func (v vcn) validVcnCIDR() bool {
+func validVcnCIDR(cidr string) bool {
 
-	_, ipv4net, err := net.ParseCIDR(v.cidr)
+	_, ipv4net, err := net.ParseCIDR(cidr)
 	if err != nil {
 		log.Fatal(err)
 		return false
@@ -87,53 +68,80 @@ func (v vcn) validVcnCIDR() bool {
 	return true
 }
 
-//Rtable represents a Route Table on a VCN
-type rtable struct {
-	vcnID         string
-	compartmentID string
-	name          string
-	routes        []route
+type gateway struct {
+	vcnID, compartmentID string
+}
+
+func (gw gateway) createIGW() Resource {
+	return Resource{Type: "oci_core_internet_gateway",
+		Name: "igw",
+		Rfield: Field{"compartment_id": gw.compartmentID,
+			"vcn_id": gw.vcnID}}
+}
+
+func (gw gateway) createNGW() Resource {
+	return Resource{Type: "oci_core_nat_gateway",
+		Name: "ngw",
+		Rfield: Field{"compartment_id": gw.compartmentID,
+			"vcn_id": gw.vcnID}}
 }
 
 type route struct {
-	netIdentityID   string
-	destinationCIDR string
-	destinationType string
+	netIdentityID, destinationCIDR, destinationType string
 }
 
-//add routes to a given route table
-func (rt *rtable) addRoutes(rts []route) {
+func (r route) createRoute() Field {
 
-	for _, r := range rts {
-		rt.routes = append(rt.routes, r)
-	}
+	return Field{"network_entity_id": r.netIdentityID,
+		"destination":      r.destinationCIDR,
+		"destination_type": "CIDR_BLOCK"}
 }
 
-func (rt rtable) create() (Field, error) {
-
-	if len(rt.routes) == 0 {
-		return Field{}, errors.New("At least one route should be added to create this field")
-	}
-
-	//Add all routes available
-	var routeRules []Field
-	for _, ro := range rt.routes {
-		ro := Field{"network_entity_id": ro.netIdentityID,
-			"destination":      ro.destinationCIDR,
-			"destination_type": "CIDR_BLOCK"}
-
-		routeRules = append(routeRules, ro)
-	}
-	return Field{"compartment_id": rt.compartmentID,
-		"vcn_id":      rt.vcnID,
-		"route_rules": routeRules}, nil
+type rtable struct {
+	routeRule            Field
+	vcnID, compartmentID string
 }
 
-//Network components
-type network struct {
-	vcnID         vcn
-	publicOnly    bool
-	compartmentID string
-	rtables       []rtable
-	subnets       []subnet
+func (rt *rtable) create() (Resource, error) {
+
+	f := &Field{}
+	if &rt.routeRule == f {
+		return Resource{}, errors.New("A rule is required")
+	}
+
+	rtr := Resource{Type: "oci_core_route_table",
+		Name: "rt",
+		Rfield: Field{"compartment_id": rt.compartmentID,
+			"vcn_id":      rt.vcnID,
+			"route_rules": rt.routeRule}}
+
+	return rtr, nil
+}
+
+//Subnet describe a subnet to be use in vcn
+type subnet struct {
+	vcnID, cidr, rtID, compartmentID string
+}
+
+//Create subnet fields
+func (sub subnet) create() (Resource, error) {
+
+	if sub.cidr == "" || sub.vcnID == "" || sub.rtID == "" || sub.compartmentID == "" {
+		return Resource{}, errors.New("One or more subnet fields are empty")
+	}
+
+	s := Resource{Type: "oci_core_subnet",
+		Name: "pub_elb_subnet",
+		Rfield: Field{"vcn_id": sub.vcnID,
+			"cidr_block":     sub.cidr,
+			"compartment_id": sub.compartmentID,
+			"route_table_id": sub.rtID}}
+
+	return s, nil
+}
+
+//security list struct
+type secList struct {
+	name, vncID, compartmentID string
+	egressRule, ingressRule    Field
 }
