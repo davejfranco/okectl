@@ -4,4 +4,6 @@ pkg/*/*.tfvars
 pkg/*/*.tfstate
 pkg/*/*.tfstate.backup
 pkg/*/.terraform
+.vscode/
+test/
 
