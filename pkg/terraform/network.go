@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net"
 
@@ -30,6 +29,21 @@ type networkVCN struct {
 	rtables       []rtable
 }
 
+/*
+resource "oci_core_vcn" "test_vcn" {
+    #Required
+    cidr_block = "${var.vcn_cidr_block}"
+    compartment_id = "${var.compartment_id}"
+
+    #Optional
+    defined_tags = {"Operations.CostCenter"= "42"}
+    display_name = "${var.vcn_display_name}"
+    dns_label = "${var.vcn_dns_label}"
+    freeform_tags = {"Department"= "Finance"}
+    ipv6cidr_block = "${var.vcn_ipv6cidr_block}"
+    is_ipv6enabled = "${var.vcn_is_ipv6enabled}"
+}
+*/
 type vcn struct {
 	name, cidr, compartmentID string
 }
@@ -61,7 +75,6 @@ func validVcnCIDR(cidr string) bool {
 
 	//Check Network Mask lenght should be between either /16 or /24
 	mask := util.HexaMask(ipv4net.Mask.String())
-	fmt.Println(mask)
 	if mask != "16" && mask != "24" {
 		return false
 	}
@@ -86,8 +99,30 @@ func (gw gateway) createNGW() Resource {
 			"vcn_id": gw.vcnID}}
 }
 
+/*
+resource "oci_core_route_table" "test_route_table" {
+    #Required
+    compartment_id = "${var.compartment_id}"
+    vcn_id = "${oci_core_vcn.test_vcn.id}"
+
+    #Optional
+    defined_tags = {"Operations.CostCenter"= "42"}
+    display_name = "${var.route_table_display_name}"
+    freeform_tags = {"Department"= "Finance"}
+    route_rules {
+        #Required
+        network_entity_id = "${oci_core_internet_gateway.test_internet_gateway.id}"
+
+        #Optional
+        cidr_block = "${var.route_table_route_rules_cidr_block}"
+        description = "${var.route_table_route_rules_description}"
+        destination = "${var.route_table_route_rules_destination}"
+        destination_type = "${var.route_table_route_rules_destination_type}"
+    }
+}
+*/
 type route struct {
-	netIdentityID, destinationCIDR, destinationType string
+	netIdentityID, destinationCIDR string
 }
 
 func (r route) createRoute() Field {
@@ -98,29 +133,45 @@ func (r route) createRoute() Field {
 }
 
 type rtable struct {
-	routeRule            Field
-	vcnID, compartmentID string
+	vcnID, compartmentID, name string
 }
 
-func (rt *rtable) create() (Resource, error) {
-
-	f := &Field{}
-	if &rt.routeRule == f {
-		return Resource{}, errors.New("A rule is required")
-	}
+//Create route table
+func (rt rtable) create(r Field) (Resource, error) {
 
 	rtr := Resource{Type: "oci_core_route_table",
 		Name: "rt",
 		Rfield: Field{"compartment_id": rt.compartmentID,
-			"vcn_id":      rt.vcnID,
-			"route_rules": rt.routeRule}}
+			"vcn_id":       rt.vcnID,
+			"display_name": rt.name,
+			"route_rules":  r}}
 
 	return rtr, nil
 }
 
+/*
+resource "oci_core_subnet" "test_subnet" {
+    #Required
+    cidr_block = "${var.subnet_cidr_block}"
+    compartment_id = "${var.compartment_id}"
+    vcn_id = "${oci_core_vcn.test_vcn.id}"
+
+    #Optional
+    availability_domain = "${var.subnet_availability_domain}"
+    defined_tags = {"Operations.CostCenter"= "42"}
+    dhcp_options_id = "${oci_core_dhcp_options.test_dhcp_options.id}"
+    display_name = "${var.subnet_display_name}"
+    dns_label = "${var.subnet_dns_label}"
+    freeform_tags = {"Department"= "Finance"}
+    ipv6cidr_block = "${var.subnet_ipv6cidr_block}"
+    prohibit_public_ip_on_vnic = "${var.subnet_prohibit_public_ip_on_vnic}"
+    route_table_id = "${oci_core_route_table.test_route_table.id}"
+    security_list_ids = "${var.subnet_security_list_ids}"
+}
+*/
 //Subnet describe a subnet to be use in vcn
 type subnet struct {
-	vcnID, cidr, rtID, compartmentID string
+	vcnID, cidr, rtID, compartmentID, name string
 }
 
 //Create subnet fields
@@ -131,9 +182,10 @@ func (sub subnet) create() (Resource, error) {
 	}
 
 	s := Resource{Type: "oci_core_subnet",
-		Name: "pub_elb_subnet",
+		Name: "sub",
 		Rfield: Field{"vcn_id": sub.vcnID,
 			"cidr_block":     sub.cidr,
+			"display_name":   sub.name,
 			"compartment_id": sub.compartmentID,
 			"route_table_id": sub.rtID}}
 
