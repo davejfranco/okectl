@@ -2,14 +2,13 @@ package terraform
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
 
 const (
-	tfFileName = "maingo.tf.json"
-	k8sVersion = "v1.14.8"
-	sshKeyfile = "~/.ssh/id_rsa.pub"
+	tfFileName = "okectl.tf.json"
 )
 
 //Tfile generator struct
@@ -47,6 +46,7 @@ func validResource(resource string) bool {
 	var validr = []string{"oci_identity_compartment",
 		"oci_core_vcn",
 		"oci_core_internet_gateway",
+		"oci_core_nat_gateway",
 		"oci_core_route_table",
 		"oci_core_subnet"}
 
@@ -58,34 +58,28 @@ func validResource(resource string) bool {
 	return false
 }
 
-func validVarTypes(vtype string) bool {
-	var validtypes = []string{"string", "list", ""}
-}
-
-//Var respresents Variable in tf files
-type Var struct {
-	Vname    string
-	Vtype    string
-	Vdefault string
-}
-
 //Resource to identifu different resources in the terraform
 type Resource struct {
-	Rtype  string
-	Rname  string
+	Type   string
+	Name   string
 	Rfield Field
 }
 
 //Create resource
-func (r *Resource) Create() Field {
+func (r Resource) Create() Field {
 
-	if r.Rtype == "" {
+	if r.Type == "" {
 		log.Fatal("Resource type cannot be empty")
 	}
 
-	if !validResource(r.Rtype) {
-		log.Fatalf("Invalid resource type %v", r.Rtype)
+	if !validResource(r.Type) {
+		log.Fatalf("Invalid resource type %v", r.Type)
 	}
 
-	return Field{r.Rtype: Field{r.Rname: r.Rfield}}
+	return Field{r.Type: Field{r.Name: r.Rfield}}
+}
+
+//Export will generate the resource export like "${oci_core_vcn.vcn.id}"
+func (r *Resource) Export() string {
+	return fmt.Sprintf("${%v.%v.id}", r.Type, r.Name)
 }
