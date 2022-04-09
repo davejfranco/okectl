@@ -1,9 +1,12 @@
-// Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2016, 2018, 2020, Oracle and/or its affiliates.  All rights reserved.
+// This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // Container Engine for Kubernetes API
 //
-// Container Engine for Kubernetes API
+// API for the Container Engine for Kubernetes service. Use this API to build, deploy,
+// and manage cloud-native applications. For more information, see
+// Overview of Container Engine for Kubernetes (https://docs.cloud.oracle.com/iaas/Content/ContEng/Concepts/contengoverview.htm).
 //
 
 package containerengine
@@ -12,7 +15,7 @@ import (
 	"github.com/oracle/oci-go-sdk/common"
 )
 
-// Cluster A Kubernetes cluster.
+// Cluster A Kubernetes cluster. Avoid entering confidential information.
 type Cluster struct {
 
 	// The OCID of the cluster.
@@ -29,6 +32,9 @@ type Cluster struct {
 
 	// The version of Kubernetes running on the cluster masters.
 	KubernetesVersion *string `mandatory:"false" json:"kubernetesVersion"`
+
+	// The OCID of the KMS key to be used as the master encryption key for Kubernetes secret encryption.
+	KmsKeyId *string `mandatory:"false" json:"kmsKeyId"`
 
 	// Optional attributes for the cluster.
 	Options *ClusterCreateOptions `mandatory:"false" json:"options"`
@@ -51,35 +57,4 @@ type Cluster struct {
 
 func (m Cluster) String() string {
 	return common.PointerString(m)
-}
-
-// ClusterLifecycleStateEnum Enum with underlying type: string
-type ClusterLifecycleStateEnum string
-
-// Set of constants representing the allowable values for ClusterLifecycleState
-const (
-	ClusterLifecycleStateCreating ClusterLifecycleStateEnum = "CREATING"
-	ClusterLifecycleStateActive   ClusterLifecycleStateEnum = "ACTIVE"
-	ClusterLifecycleStateFailed   ClusterLifecycleStateEnum = "FAILED"
-	ClusterLifecycleStateDeleting ClusterLifecycleStateEnum = "DELETING"
-	ClusterLifecycleStateDeleted  ClusterLifecycleStateEnum = "DELETED"
-	ClusterLifecycleStateUpdating ClusterLifecycleStateEnum = "UPDATING"
-)
-
-var mappingClusterLifecycleState = map[string]ClusterLifecycleStateEnum{
-	"CREATING": ClusterLifecycleStateCreating,
-	"ACTIVE":   ClusterLifecycleStateActive,
-	"FAILED":   ClusterLifecycleStateFailed,
-	"DELETING": ClusterLifecycleStateDeleting,
-	"DELETED":  ClusterLifecycleStateDeleted,
-	"UPDATING": ClusterLifecycleStateUpdating,
-}
-
-// GetClusterLifecycleStateEnumValues Enumerates the set of values for ClusterLifecycleState
-func GetClusterLifecycleStateEnumValues() []ClusterLifecycleStateEnum {
-	values := make([]ClusterLifecycleStateEnum, 0)
-	for _, v := range mappingClusterLifecycleState {
-		values = append(values, v)
-	}
-	return values
 }

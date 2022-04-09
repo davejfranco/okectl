@@ -1,9 +1,12 @@
-// Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2016, 2018, 2020, Oracle and/or its affiliates.  All rights reserved.
+// This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // Container Engine for Kubernetes API
 //
-// Container Engine for Kubernetes API
+// API for the Container Engine for Kubernetes service. Use this API to build, deploy,
+// and manage cloud-native applications. For more information, see
+// Overview of Container Engine for Kubernetes (https://docs.cloud.oracle.com/iaas/Content/ContEng/Concepts/contengoverview.htm).
 //
 
 package containerengine
@@ -21,6 +24,9 @@ type Node struct {
 	// The name of the node.
 	Name *string `mandatory:"false" json:"name"`
 
+	// The version of Kubernetes this node is running.
+	KubernetesVersion *string `mandatory:"false" json:"kubernetesVersion"`
+
 	// The name of the availability domain in which this node is placed.
 	AvailabilityDomain *string `mandatory:"false" json:"availabilityDomain"`
 
@@ -29,6 +35,12 @@ type Node struct {
 
 	// The OCID of the node pool to which this node belongs.
 	NodePoolId *string `mandatory:"false" json:"nodePoolId"`
+
+	// The fault domain of this node.
+	FaultDomain *string `mandatory:"false" json:"faultDomain"`
+
+	// The private IP address of this node.
+	PrivateIp *string `mandatory:"false" json:"privateIp"`
 
 	// The public IP address of this node.
 	PublicIp *string `mandatory:"false" json:"publicIp"`
@@ -50,7 +62,7 @@ func (m Node) String() string {
 // NodeLifecycleStateEnum Enum with underlying type: string
 type NodeLifecycleStateEnum string
 
-// Set of constants representing the allowable values for NodeLifecycleState
+// Set of constants representing the allowable values for NodeLifecycleStateEnum
 const (
 	NodeLifecycleStateCreating NodeLifecycleStateEnum = "CREATING"
 	NodeLifecycleStateActive   NodeLifecycleStateEnum = "ACTIVE"
@@ -71,7 +83,7 @@ var mappingNodeLifecycleState = map[string]NodeLifecycleStateEnum{
 	"INACTIVE": NodeLifecycleStateInactive,
 }
 
-// GetNodeLifecycleStateEnumValues Enumerates the set of values for NodeLifecycleState
+// GetNodeLifecycleStateEnumValues Enumerates the set of values for NodeLifecycleStateEnum
 func GetNodeLifecycleStateEnumValues() []NodeLifecycleStateEnum {
 	values := make([]NodeLifecycleStateEnum, 0)
 	for _, v := range mappingNodeLifecycleState {

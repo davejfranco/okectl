@@ -1,0 +1,7 @@
+# github.com/oracle/oci-go-sdk v24.3.0+incompatible
+## explicit
+github.com/oracle/oci-go-sdk/common
+github.com/oracle/oci-go-sdk/containerengine
+github.com/oracle/oci-go-sdk/core
+# github.com/stretchr/testify v1.7.1
+## explicit; go 1.13

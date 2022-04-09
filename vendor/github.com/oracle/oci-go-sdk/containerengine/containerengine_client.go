@@ -1,9 +1,12 @@
-// Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2016, 2018, 2020, Oracle and/or its affiliates.  All rights reserved.
+// This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 // Code generated. DO NOT EDIT.
 
 // Container Engine for Kubernetes API
 //
-// Container Engine for Kubernetes API
+// API for the Container Engine for Kubernetes service. Use this API to build, deploy,
+// and manage cloud-native applications. For more information, see
+// Overview of Container Engine for Kubernetes (https://docs.cloud.oracle.com/iaas/Content/ContEng/Concepts/contengoverview.htm).
 //
 
 package containerengine
@@ -29,6 +32,22 @@ func NewContainerEngineClientWithConfigurationProvider(configProvider common.Con
 		return
 	}
 
+	return newContainerEngineClientFromBaseClient(baseClient, configProvider)
+}
+
+// NewContainerEngineClientWithOboToken Creates a new default ContainerEngine client with the given configuration provider.
+// The obotoken will be added to default headers and signed; the configuration provider will be used for the signer
+//  as well as reading the region
+func NewContainerEngineClientWithOboToken(configProvider common.ConfigurationProvider, oboToken string) (client ContainerEngineClient, err error) {
+	baseClient, err := common.NewClientWithOboToken(configProvider, oboToken)
+	if err != nil {
+		return
+	}
+
+	return newContainerEngineClientFromBaseClient(baseClient, configProvider)
+}
+
+func newContainerEngineClientFromBaseClient(baseClient common.BaseClient, configProvider common.ConfigurationProvider) (client ContainerEngineClient, err error) {
 	client = ContainerEngineClient{BaseClient: baseClient}
 	client.BasePath = "20180222"
 	err = client.setConfigurationProvider(configProvider)
@@ -37,7 +56,7 @@ func NewContainerEngineClientWithConfigurationProvider(configProvider common.Con
 
 // SetRegion overrides the region of this client.
 func (client *ContainerEngineClient) SetRegion(region string) {
-	client.Host = fmt.Sprintf(common.DefaultHostURLTemplate, "containerengine", region)
+	client.Host = common.StringToRegion(region).EndpointForTemplate("containerengine", "https://containerengine.{region}.oci.{secondLevelDomain}")
 }
 
 // SetConfigurationProvider sets the configuration provider including the region, returns an error if is not valid
@@ -65,8 +84,21 @@ func (client ContainerEngineClient) CreateCluster(ctx context.Context, request C
 	if request.RetryPolicy() != nil {
 		policy = *request.RetryPolicy()
 	}
+
+	if !(request.OpcRetryToken != nil && *request.OpcRetryToken != "") {
+		request.OpcRetryToken = common.String(common.RetryToken())
+	}
+
 	ociResponse, err = common.Retry(ctx, request, client.createCluster, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = CreateClusterResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = CreateClusterResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(CreateClusterResponse); ok {
@@ -106,6 +138,14 @@ func (client ContainerEngineClient) CreateKubeconfig(ctx context.Context, reques
 	}
 	ociResponse, err = common.Retry(ctx, request, client.createKubeconfig, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = CreateKubeconfigResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = CreateKubeconfigResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(CreateKubeconfigResponse); ok {
@@ -126,7 +166,6 @@ func (client ContainerEngineClient) createKubeconfig(ctx context.Context, reques
 	var response CreateKubeconfigResponse
 	var httpResponse *http.Response
 	httpResponse, err = client.Call(ctx, &httpRequest)
-	defer common.CloseBodyIfValid(httpResponse)
 	response.RawResponse = httpResponse
 	if err != nil {
 		return response, err
@@ -143,8 +182,21 @@ func (client ContainerEngineClient) CreateNodePool(ctx context.Context, request 
 	if request.RetryPolicy() != nil {
 		policy = *request.RetryPolicy()
 	}
+
+	if !(request.OpcRetryToken != nil && *request.OpcRetryToken != "") {
+		request.OpcRetryToken = common.String(common.RetryToken())
+	}
+
 	ociResponse, err = common.Retry(ctx, request, client.createNodePool, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = CreateNodePoolResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = CreateNodePoolResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(CreateNodePoolResponse); ok {
@@ -184,6 +236,14 @@ func (client ContainerEngineClient) DeleteCluster(ctx context.Context, request D
 	}
 	ociResponse, err = common.Retry(ctx, request, client.deleteCluster, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = DeleteClusterResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = DeleteClusterResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(DeleteClusterResponse); ok {
@@ -223,6 +283,14 @@ func (client ContainerEngineClient) DeleteNodePool(ctx context.Context, request 
 	}
 	ociResponse, err = common.Retry(ctx, request, client.deleteNodePool, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = DeleteNodePoolResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = DeleteNodePoolResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(DeleteNodePoolResponse); ok {
@@ -262,6 +330,14 @@ func (client ContainerEngineClient) DeleteWorkRequest(ctx context.Context, reque
 	}
 	ociResponse, err = common.Retry(ctx, request, client.deleteWorkRequest, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = DeleteWorkRequestResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = DeleteWorkRequestResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(DeleteWorkRequestResponse); ok {
@@ -301,6 +377,14 @@ func (client ContainerEngineClient) GetCluster(ctx context.Context, request GetC
 	}
 	ociResponse, err = common.Retry(ctx, request, client.getCluster, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = GetClusterResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = GetClusterResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(GetClusterResponse); ok {
@@ -340,6 +424,14 @@ func (client ContainerEngineClient) GetClusterOptions(ctx context.Context, reque
 	}
 	ociResponse, err = common.Retry(ctx, request, client.getClusterOptions, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = GetClusterOptionsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = GetClusterOptionsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(GetClusterOptionsResponse); ok {
@@ -379,6 +471,14 @@ func (client ContainerEngineClient) GetNodePool(ctx context.Context, request Get
 	}
 	ociResponse, err = common.Retry(ctx, request, client.getNodePool, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = GetNodePoolResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = GetNodePoolResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(GetNodePoolResponse); ok {
@@ -418,6 +518,14 @@ func (client ContainerEngineClient) GetNodePoolOptions(ctx context.Context, requ
 	}
 	ociResponse, err = common.Retry(ctx, request, client.getNodePoolOptions, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = GetNodePoolOptionsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = GetNodePoolOptionsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(GetNodePoolOptionsResponse); ok {
@@ -457,6 +565,14 @@ func (client ContainerEngineClient) GetWorkRequest(ctx context.Context, request 
 	}
 	ociResponse, err = common.Retry(ctx, request, client.getWorkRequest, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = GetWorkRequestResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = GetWorkRequestResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(GetWorkRequestResponse); ok {
@@ -496,6 +612,14 @@ func (client ContainerEngineClient) ListClusters(ctx context.Context, request Li
 	}
 	ociResponse, err = common.Retry(ctx, request, client.listClusters, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = ListClustersResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = ListClustersResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(ListClustersResponse); ok {
@@ -535,6 +659,14 @@ func (client ContainerEngineClient) ListNodePools(ctx context.Context, request L
 	}
 	ociResponse, err = common.Retry(ctx, request, client.listNodePools, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = ListNodePoolsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = ListNodePoolsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(ListNodePoolsResponse); ok {
@@ -574,6 +706,14 @@ func (client ContainerEngineClient) ListWorkRequestErrors(ctx context.Context, r
 	}
 	ociResponse, err = common.Retry(ctx, request, client.listWorkRequestErrors, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = ListWorkRequestErrorsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = ListWorkRequestErrorsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(ListWorkRequestErrorsResponse); ok {
@@ -613,6 +753,14 @@ func (client ContainerEngineClient) ListWorkRequestLogs(ctx context.Context, req
 	}
 	ociResponse, err = common.Retry(ctx, request, client.listWorkRequestLogs, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = ListWorkRequestLogsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = ListWorkRequestLogsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(ListWorkRequestLogsResponse); ok {
@@ -652,6 +800,14 @@ func (client ContainerEngineClient) ListWorkRequests(ctx context.Context, reques
 	}
 	ociResponse, err = common.Retry(ctx, request, client.listWorkRequests, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = ListWorkRequestsResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = ListWorkRequestsResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(ListWorkRequestsResponse); ok {
@@ -691,6 +847,14 @@ func (client ContainerEngineClient) UpdateCluster(ctx context.Context, request U
 	}
 	ociResponse, err = common.Retry(ctx, request, client.updateCluster, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = UpdateClusterResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = UpdateClusterResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(UpdateClusterResponse); ok {
@@ -730,6 +894,14 @@ func (client ContainerEngineClient) UpdateNodePool(ctx context.Context, request 
 	}
 	ociResponse, err = common.Retry(ctx, request, client.updateNodePool, policy)
 	if err != nil {
+		if ociResponse != nil {
+			if httpResponse := ociResponse.HTTPResponse(); httpResponse != nil {
+				opcRequestId := httpResponse.Header.Get("opc-request-id")
+				response = UpdateNodePoolResponse{RawResponse: httpResponse, OpcRequestId: &opcRequestId}
+			} else {
+				response = UpdateNodePoolResponse{}
+			}
+		}
 		return
 	}
 	if convertedResponse, ok := ociResponse.(UpdateNodePoolResponse); ok {

@@ -1,4 +1,5 @@
-// Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2016, 2018, 2020, Oracle and/or its affiliates.  All rights reserved.
+// This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 package common
 
@@ -51,7 +52,7 @@ type rawConfigurationProvider struct {
 	privateKeyPassphrase *string
 }
 
-// NewRawConfigurationProvider will create a rawConfigurationProvider
+// NewRawConfigurationProvider will create a ConfigurationProvider with the arguments of the function
 func NewRawConfigurationProvider(tenancy, user, region, fingerprint, privateKey string, privateKeyPassphrase *string) ConfigurationProvider {
 	return rawConfigurationProvider{tenancy, user, region, fingerprint, privateKey, privateKeyPassphrase}
 }
@@ -80,19 +81,28 @@ func (p rawConfigurationProvider) KeyID() (keyID string, err error) {
 }
 
 func (p rawConfigurationProvider) TenancyOCID() (string, error) {
+	if p.tenancy == "" {
+		return "", fmt.Errorf("tenancy OCID can not be empty")
+	}
 	return p.tenancy, nil
 }
 
 func (p rawConfigurationProvider) UserOCID() (string, error) {
+	if p.user == "" {
+		return "", fmt.Errorf("user OCID can not be empty")
+	}
 	return p.user, nil
 }
 
 func (p rawConfigurationProvider) KeyFingerprint() (string, error) {
+	if p.fingerprint == "" {
+		return "", fmt.Errorf("fingerprint can not be empty")
+	}
 	return p.fingerprint, nil
 }
 
 func (p rawConfigurationProvider) Region() (string, error) {
-	return p.region, nil
+	return canStringBeRegion(p.region)
 }
 
 // environmentConfigurationProvider reads configuration from environment variables
@@ -183,8 +193,10 @@ func (p environmentConfigurationProvider) Region() (value string, err error) {
 	var ok bool
 	if value, ok = os.LookupEnv(environmentVariable); !ok {
 		err = fmt.Errorf("can not read region from environment variable %s", environmentVariable)
+		return value, err
 	}
-	return
+
+	return canStringBeRegion(value)
 }
 
 // fileConfigurationProvider. reads configuration information from a file
@@ -229,8 +241,8 @@ func ConfigurationProviderFromFileWithProfile(configFilePath, profile, privateKe
 }
 
 type configFileInfo struct {
-	UserOcid, Fingerprint, KeyFilePath, TenancyOcid, Region, Passphrase string
-	PresentConfiguration                                                byte
+	UserOcid, Fingerprint, KeyFilePath, TenancyOcid, Region, Passphrase, SecurityTokenFilePath string
+	PresentConfiguration                                                                       byte
 }
 
 const (
@@ -240,6 +252,7 @@ const (
 	hasRegion
 	hasKeyFile
 	hasPassphrase
+	hasSecurityTokenFile
 	none
 )
 
@@ -298,6 +311,9 @@ func parseConfigAtLine(start int, content []string) (info *configFileInfo, err e
 		case "region":
 			configurationPresent = configurationPresent | hasRegion
 			info.Region = value
+		case "security_token_file":
+			configurationPresent = configurationPresent | hasSecurityTokenFile
+			info.SecurityTokenFilePath = value
 		}
 	}
 	info.PresentConfiguration = configurationPresent
@@ -310,7 +326,7 @@ func parseConfigAtLine(start int, content []string) (info *configFileInfo, err e
 func expandPath(filepath string) (expandedPath string) {
 	cleanedPath := path.Clean(filepath)
 	expandedPath = cleanedPath
-	if strings.HasPrefix(cleanedPath, "~/") {
+	if strings.HasPrefix(cleanedPath, "~") {
 		rest := cleanedPath[2:]
 		expandedPath = path.Join(getHomeFolder(), rest)
 	}
@@ -375,7 +391,13 @@ func (p fileConfigurationProvider) UserOCID() (value string, err error) {
 		return
 	}
 
-	value, err = presentOrError(info.UserOcid, hasUser, info.PresentConfiguration, "user")
+	if value, err = presentOrError(info.UserOcid, hasUser, info.PresentConfiguration, "user"); err != nil {
+		// need to check if securityTokenPath is provided, if security token is provided, userOCID can be "".
+		if _, stErr := presentOrError(info.SecurityTokenFilePath, hasSecurityTokenFile, info.PresentConfiguration,
+			"securityTokenPath"); stErr == nil {
+			err = nil
+		}
+	}
 	return
 }
 
@@ -395,8 +417,14 @@ func (p fileConfigurationProvider) KeyID() (keyID string, err error) {
 		err = fmt.Errorf("can not read tenancy configuration due to: %s", err.Error())
 		return
 	}
-
-	return fmt.Sprintf("%s/%s/%s", info.TenancyOcid, info.UserOcid, info.Fingerprint), nil
+	if info.PresentConfiguration&hasUser == hasUser {
+		return fmt.Sprintf("%s/%s/%s", info.TenancyOcid, info.UserOcid, info.Fingerprint), nil
+	}
+	if filePath, err := presentOrError(info.SecurityTokenFilePath, hasSecurityTokenFile, info.PresentConfiguration, "securityTokenFilePath"); err == nil {
+		return getSecurityToken(filePath)
+	}
+	err = fmt.Errorf("can not read SecurityTokenFilePath from configuration file due to: %s", err.Error())
+	return
 }
 
 func (p fileConfigurationProvider) PrivateRSAKey() (key *rsa.PrivateKey, err error) {
@@ -436,7 +464,26 @@ func (p fileConfigurationProvider) Region() (value string, err error) {
 	}
 
 	value, err = presentOrError(info.Region, hasRegion, info.PresentConfiguration, "region")
-	return
+	if err != nil {
+		val, error := getRegionFromEnvVar()
+		if error != nil {
+			err = fmt.Errorf("region configuration is missing from file, nor for OCI_REGION env var")
+			return
+		}
+		value = val
+	}
+
+	return canStringBeRegion(value)
+}
+
+func getSecurityToken(filePath string) (string, error) {
+	expandedPath := expandPath(filePath)
+	tokenFileContent, err := ioutil.ReadFile(expandedPath)
+	if err != nil {
+		err = fmt.Errorf("can not read PrivateKey  from configuration file due to: %s", err.Error())
+		return "", err
+	}
+	return fmt.Sprintf("ST$%s", tokenFileContent), nil
 }
 
 // A configuration provider that look for information in  multiple configuration providers
@@ -496,7 +543,10 @@ func (c composingConfigurationProvider) Region() (string, error) {
 			return val, nil
 		}
 	}
-	return "", fmt.Errorf("did not find a proper configuration for region")
+	if val, err := getRegionFromEnvVar(); err == nil {
+		return val, nil
+	}
+	return "", fmt.Errorf("did not find a proper configuration for region, nor for OCI_REGION env var")
 }
 
 func (c composingConfigurationProvider) KeyID() (string, error) {
@@ -517,4 +567,12 @@ func (c composingConfigurationProvider) PrivateRSAKey() (*rsa.PrivateKey, error)
 		}
 	}
 	return nil, fmt.Errorf("did not find a proper configuration for private key")
+}
+
+func getRegionFromEnvVar() (string, error) {
+	regionEnvVar := "OCI_REGION"
+	if region, existed := os.LookupEnv(regionEnvVar); existed {
+		return region, nil
+	}
+	return "", fmt.Errorf("did not find OCI_REGION env var")
 }

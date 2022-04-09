@@ -1,4 +1,5 @@
-// Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2016, 2018, 2020, Oracle and/or its affiliates.  All rights reserved.
+// This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
 
 // Package common provides supporting functions and structs used by service packages
 package common
@@ -59,6 +60,9 @@ const (
 	// requestHeaderXContentSHA256 The key for passing a header to indicate SHA256 hash
 	requestHeaderXContentSHA256 = "X-Content-SHA256"
 
+	// requestHeaderOpcOboToken The key for passing a header to use obo token
+	requestHeaderOpcOboToken = "opc-obo-token"
+
 	// private constants
 	defaultScheme            = "https"
 	defaultSDKMarker         = "Oracle-GoSDK"
@@ -66,6 +70,7 @@ const (
 	defaultTimeout           = 60 * time.Second
 	defaultConfigFileName    = "config"
 	defaultConfigDirName     = ".oci"
+	configFilePathEnvVarName = "OCI_CONFIG_FILE"
 	secondaryConfigDirName   = ".oraclebmc"
 	maxBodyLenForDebug       = 1024 * 1000
 )
@@ -152,6 +157,26 @@ func NewClientWithConfig(configProvider ConfigurationProvider) (client BaseClien
 	}
 
 	client = defaultBaseClient(configProvider)
+
+	return
+}
+
+// NewClientWithOboToken Create a new client that will use oboToken for auth
+func NewClientWithOboToken(configProvider ConfigurationProvider, oboToken string) (client BaseClient, err error) {
+	client, err = NewClientWithConfig(configProvider)
+	if err != nil {
+		return
+	}
+
+	// Interceptor to add obo token header
+	client.Interceptor = func(request *http.Request) error {
+		request.Header.Add(requestHeaderOpcOboToken, oboToken)
+		return nil
+	}
+	// Obo token will also be signed
+	defaultHeaders := append(DefaultGenericHeaders(), requestHeaderOpcOboToken)
+	client.Signer = RequestSigner(configProvider, defaultHeaders, DefaultBodyHeaders())
+
 	return
 }
 
@@ -172,9 +197,11 @@ func getHomeFolder() string {
 // will look for configurations in 3 places: file in $HOME/.oci/config, HOME/.obmcs/config and
 // variables names starting with the string TF_VAR. If the same configuration is found in multiple
 // places the provider will prefer the first one.
+// If the config file is not placed in the default location, the environment variable
+// OCI_CONFIG_FILE can provide the config file location.
 func DefaultConfigProvider() ConfigurationProvider {
+	defaultConfigFile := getDefaultConfigFilePath()
 	homeFolder := getHomeFolder()
-	defaultConfigFile := path.Join(homeFolder, defaultConfigDirName, defaultConfigFileName)
 	secondaryConfigFile := path.Join(homeFolder, secondaryConfigDirName, defaultConfigFileName)
 
 	defaultFileProvider, _ := ConfigurationProviderFromFile(defaultConfigFile, "")
@@ -182,6 +209,42 @@ func DefaultConfigProvider() ConfigurationProvider {
 	environmentProvider := environmentConfigurationProvider{EnvironmentVariablePrefix: "TF_VAR"}
 
 	provider, _ := ComposingConfigurationProvider([]ConfigurationProvider{defaultFileProvider, secondaryFileProvider, environmentProvider})
+	Debugf("Configuration provided by: %s", provider)
+	return provider
+}
+
+func getDefaultConfigFilePath() string {
+	homeFolder := getHomeFolder()
+	defaultConfigFile := path.Join(homeFolder, defaultConfigDirName, defaultConfigFileName)
+	if _, err := os.Stat(defaultConfigFile); err == nil {
+		return defaultConfigFile
+	}
+	Debugf("The %s does not exist, will check env var %s for file path.", defaultConfigFile, configFilePathEnvVarName)
+	// Read configuration file path from OCI_CONFIG_FILE env var
+	fallbackConfigFile, existed := os.LookupEnv(configFilePathEnvVarName)
+	if !existed {
+		Debugf("The env var %s does not exist...", configFilePathEnvVarName)
+		return defaultConfigFile
+	}
+	if _, err := os.Stat(fallbackConfigFile); os.IsNotExist(err) {
+		Debugf("The specified cfg file path in the env var %s does not exist: %s", configFilePathEnvVarName, fallbackConfigFile)
+		return defaultConfigFile
+	}
+	return fallbackConfigFile
+}
+
+// CustomProfileConfigProvider returns the config provider of given profile. The custom profile config provider
+// will look for configurations in 2 places: file in $HOME/.oci/config,  and variables names starting with the
+// string TF_VAR. If the same configuration is found in multiple places the provider will prefer the first one.
+func CustomProfileConfigProvider(customConfigPath string, profile string) ConfigurationProvider {
+	homeFolder := getHomeFolder()
+	if customConfigPath == "" {
+		customConfigPath = path.Join(homeFolder, defaultConfigDirName, defaultConfigFileName)
+	}
+	customFileProvider, _ := ConfigurationProviderFromFileWithProfile(customConfigPath, profile, "")
+	defaultFileProvider, _ := ConfigurationProviderFromFileWithProfile(customConfigPath, "DEFAULT", "")
+	environmentProvider := environmentConfigurationProvider{EnvironmentVariablePrefix: "TF_VAR"}
+	provider, _ := ComposingConfigurationProvider([]ConfigurationProvider{customFileProvider, defaultFileProvider, environmentProvider})
 	Debugf("Configuration provided by: %s", provider)
 	return provider
 }
@@ -196,10 +259,6 @@ func (client *BaseClient) prepareRequest(request *http.Request) (err error) {
 	}
 	request.Header.Set(requestHeaderUserAgent, client.UserAgent)
 	request.Header.Set(requestHeaderDate, time.Now().UTC().Format(http.TimeFormat))
-
-	if request.Header.Get(requestHeaderOpcRetryToken) == "" {
-		request.Header.Set(requestHeaderOpcRetryToken, generateRetryToken())
-	}
 
 	if !strings.Contains(client.Host, "http") &&
 		!strings.Contains(client.Host, "https") {
@@ -257,8 +316,19 @@ type OCIResponse interface {
 // OCIOperation is the generalization of a request-response cycle undergone by an OCI service.
 type OCIOperation func(context.Context, OCIRequest) (OCIResponse, error)
 
+//ClientCallDetails a set of settings used by the a single Call operation of the http Client
+type ClientCallDetails struct {
+	Signer HTTPRequestSigner
+}
+
 // Call executes the http request with the given context
 func (client BaseClient) Call(ctx context.Context, request *http.Request) (response *http.Response, err error) {
+	return client.CallWithDetails(ctx, request, ClientCallDetails{Signer: client.Signer})
+}
+
+// CallWithDetails executes the http request, the given context using details specified in the paremeters, this function
+// provides a way to override some settings present in the client
+func (client BaseClient) CallWithDetails(ctx context.Context, request *http.Request, details ClientCallDetails) (response *http.Response, err error) {
 	Debugln("Atempting to call downstream service")
 	request = request.WithContext(ctx)
 
@@ -274,7 +344,7 @@ func (client BaseClient) Call(ctx context.Context, request *http.Request) (respo
 	}
 
 	//Sign the request
-	err = client.Signer.Sign(request)
+	err = details.Signer.Sign(request)
 	if err != nil {
 		return
 	}
@@ -282,13 +352,14 @@ func (client BaseClient) Call(ctx context.Context, request *http.Request) (respo
 	IfDebug(func() {
 		dumpBody := true
 		if request.ContentLength > maxBodyLenForDebug {
-			Logln("not dumping body too big")
+			Debugf("not dumping body too big\n")
 			dumpBody = false
 		}
-		if dump, e := httputil.DumpRequest(request, dumpBody); e == nil {
-			Logf("Dump Request %v", string(dump))
+		dumpBody = dumpBody && defaultLogger.LogLevel() == verboseLogging
+		if dump, e := httputil.DumpRequestOut(request, dumpBody); e == nil {
+			Debugf("Dump Request %s", string(dump))
 		} else {
-			Debugln(e)
+			Debugf("%v\n", e)
 		}
 	})
 
@@ -297,20 +368,21 @@ func (client BaseClient) Call(ctx context.Context, request *http.Request) (respo
 
 	IfDebug(func() {
 		if err != nil {
-			Logln(err)
+			Debugf("%v\n", err)
 			return
 		}
 
 		dumpBody := true
 		if response.ContentLength > maxBodyLenForDebug {
-			Logln("not dumping body too big")
+			Debugf("not dumping body too big\n")
 			dumpBody = false
 		}
 
+		dumpBody = dumpBody && defaultLogger.LogLevel() == verboseLogging
 		if dump, e := httputil.DumpResponse(response, dumpBody); e == nil {
-			Logf("Dump Response %v", string(dump))
+			Debugf("Dump Response %s", string(dump))
 		} else {
-			Debugln(e)
+			Debugf("%v\n", e)
 		}
 	})
 
