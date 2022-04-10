@@ -38,6 +38,20 @@ func RandomKey(keylength int) string {
 	return str
 }
 
+func RandomInt(length int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	chars := []rune(Digits)
+
+	var b strings.Builder
+	for i := 0; i < length; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+	str := b.String()
+
+	return str
+}
+
 //HexaMask returns CIDR mask in format /16 from ffff0000 format
 func HexaMask(hexa string) string {
 
