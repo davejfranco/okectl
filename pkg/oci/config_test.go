@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/oracle/oci-go-sdk/common"
+	"github.com/oracle/oci-go-sdk/containerengine"
+	"github.com/oracle/oci-go-sdk/core"
 )
 
 func TestUserIsEmpty(t *testing.T) {
@@ -84,4 +86,52 @@ func TestLoadWithFileProfile(t *testing.T) {
 		t.Errorf("Error: should be type %s", reflect.TypeOf(commonConfig).String())
 	}
 
+}
+
+func TestOkeClient(t *testing.T) {
+	cfg_path := Config{} //config using default path and profile
+
+	cfg, err := cfg_path.Load()
+	if err != nil {
+		t.Error(err)
+	}
+	oke, err := OkeClient(cfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.TypeOf(oke) != reflect.TypeOf(containerengine.ContainerEngineClient{}) {
+		t.Errorf("Error: should be type %s", reflect.TypeOf(containerengine.ContainerEngineClient{}).String())
+	}
+}
+
+func TestVcnClient(t *testing.T) {
+	cfg_path := Config{} //config using default path and profile
+
+	cfg, err := cfg_path.Load()
+	if err != nil {
+		t.Error(err)
+	}
+	vcn, err := VcnClient(cfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.TypeOf(vcn) != reflect.TypeOf(core.VirtualNetworkClient{}) {
+		t.Errorf("Error: should be type %s", reflect.TypeOf(core.VirtualNetworkClient{}).String())
+	}
+}
+
+func TestComputeClient(t *testing.T) {
+	cfg_path := Config{} //config using default path and profile
+
+	cfg, err := cfg_path.Load()
+	if err != nil {
+		t.Error(err)
+	}
+	srv, err := ComputeClient(cfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.TypeOf(srv) != reflect.TypeOf(core.ComputeClient{}) {
+		t.Errorf("Error: should be type %s", reflect.TypeOf(core.ComputeClient{}).String())
+	}
 }
