@@ -30,7 +30,7 @@ type Config struct {
 	Profile string
 }
 
-func (cfg *Config) validPath() bool {
+func (cfg Config) validPath() bool {
 
 	if _, err := os.Stat(cfg.Path); err == nil {
 		return true
@@ -39,7 +39,7 @@ func (cfg *Config) validPath() bool {
 }
 
 //Load creates a condig object to connect to OCI
-func (cfg *Config) Load() (common.ConfigurationProvider, error) {
+func (cfg Config) Load() (common.ConfigurationProvider, error) {
 
 	if cfg.Path != "" || cfg.Profile != "" {
 		fmt.Println(cfg.Profile)
