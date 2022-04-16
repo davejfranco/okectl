@@ -3,7 +3,7 @@ module github.com/davejfranco/okectl
 go 1.18
 
 require (
-	github.com/oracle/oci-go-sdk v24.3.0+incompatible
+	github.com/oracle/oci-go-sdk v65.0.0+incompatible
 	github.com/spf13/cobra v1.4.0
 )
 

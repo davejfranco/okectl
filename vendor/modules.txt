@@ -1,7 +1,7 @@
 # github.com/inconshreveable/mousetrap v1.0.0
 ## explicit
 github.com/inconshreveable/mousetrap
-# github.com/oracle/oci-go-sdk v24.3.0+incompatible
+# github.com/oracle/oci-go-sdk v65.0.0+incompatible
 ## explicit
 github.com/oracle/oci-go-sdk/common
 github.com/oracle/oci-go-sdk/containerengine
