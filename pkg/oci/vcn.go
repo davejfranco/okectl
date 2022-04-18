@@ -42,14 +42,8 @@ var (
 	}
 
 	//Destination Unreachable
-	du core.IcmpOptions = core.IcmpOptions{
+	icmp core.IcmpOptions = core.IcmpOptions{
 		Type: common.Int(3),
-		Code: common.Int(3),
-	}
-
-	//Fragmentation Needed
-	fn core.IcmpOptions = core.IcmpOptions{
-		Type: common.Int(4),
 		Code: common.Int(4),
 	}
 )
@@ -189,23 +183,13 @@ func ClusterAPIIngressRules(sourceCIDR string, workersCIDR []string) []core.Ingr
 		rules = append(rules, workerToCPaccess)
 
 		//Path Discovery ICMP
-		//Destination Unreachable ICMP Option
 		workerDiscoveryDU := core.IngressSecurityRule{
 			Protocol:    common.String("1"), //ICMP
 			Source:      common.String(cidr),
-			IcmpOptions: &du,
+			IcmpOptions: &icmp,
 			Description: common.String("Path discovery"),
 		}
 		rules = append(rules, workerDiscoveryDU)
-
-		//Fragmentation Needed ICMP Option
-		workerDiscoveryFN := core.IngressSecurityRule{
-			Protocol:    common.String("1"), //ICMP
-			Source:      common.String(cidr),
-			IcmpOptions: &fn,
-			Description: common.String("Path discovery"),
-		}
-		rules = append(rules, workerDiscoveryFN)
 	}
 
 	return rules
@@ -216,23 +200,13 @@ func ClusterAPIEgressRules(workersCIDR []string) []core.EgressSecurityRule {
 
 	for _, cidr := range workersCIDR {
 		//Path Discovery ICMP
-		//Destination Unreachable ICMP Option
 		workerDiscoveryDU := core.EgressSecurityRule{
 			Protocol:    common.String("1"), //ICMP
 			Destination: common.String(cidr),
-			IcmpOptions: &du,
+			IcmpOptions: &icmp,
 			Description: common.String("Path discovery"),
 		}
 		rules = append(rules, workerDiscoveryDU)
-
-		//Fragmentation Needed ICMP Option
-		workerDiscoveryFN := core.EgressSecurityRule{
-			Protocol:    common.String("1"), //ICMP
-			Destination: common.String(cidr),
-			IcmpOptions: &fn,
-			Description: common.String("Path discovery"),
-		}
-		rules = append(rules, workerDiscoveryFN)
 
 		//Grant workers all tcp traffic
 		workersAll := core.EgressSecurityRule{
@@ -244,8 +218,9 @@ func ClusterAPIEgressRules(workersCIDR []string) []core.EgressSecurityRule {
 	}
 	//Grant egress access to OCI services
 	httpsOCI := core.EgressSecurityRule{
-		Protocol:    common.String("6"), //TCP
-		Destination: common.String("all-iad-services-in-oracle-services-network"),
+		Protocol:        common.String("6"), //TCP
+		Destination:     common.String("all-iad-services-in-oracle-services-network"),
+		DestinationType: "SERVICE_CIDR_BLOCK",
 		TcpOptions: &core.TcpOptions{
 			DestinationPortRange: &httpsConn,
 		},
@@ -264,22 +239,24 @@ func (v Vcn) AddSecurityList(sl SecurityList) (core.CreateSecurityListResponse, 
 			IngressSecurityRules: sl.IngressRule,
 		},
 	}
+
 	resp, err := v.Client.CreateSecurityList(v.Ctx, req)
 	if err != nil {
-		return core.CreateSecurityListResponse{}, nil
+		return core.CreateSecurityListResponse{}, err
 	}
 	return resp, nil
 }
 
 //AddSubnet will create a subnet for a given VCN
-func (v Vcn) AddSubnet(vcnID string, subnet Network) (core.CreateSubnetResponse, error) {
+func (v Vcn) AddSubnet(vcnID string, subnet Network, seclistIDs []string) (core.CreateSubnetResponse, error) {
 
 	req := core.CreateSubnetRequest{
 		CreateSubnetDetails: core.CreateSubnetDetails{
-			CompartmentId: &v.CompartmentID,
-			CidrBlock:     &subnet.CIDR,
-			VcnId:         &vcnID,
-			DisplayName:   &subnet.Name,
+			CompartmentId:   &v.CompartmentID,
+			CidrBlock:       &subnet.CIDR,
+			VcnId:           &vcnID,
+			DisplayName:     &subnet.Name,
+			SecurityListIds: seclistIDs,
 		},
 	}
 
@@ -361,7 +338,7 @@ func QuickNetworking(vcn Vcn) error {
 	//Create three subnets for worker nodes, public services, and k8s api endpoint
 	fmt.Println("Creating Subnets...")
 	for _, subnet := range quickSubnets {
-		_, err = vcn.AddSubnet(*vcnresp.Id, subnet)
+		_, err = vcn.AddSubnet(*vcnresp.Id, subnet, []string{})
 		if err != nil {
 			return err
 		}
