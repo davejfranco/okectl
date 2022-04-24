@@ -2,9 +2,7 @@ package oci
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/davejfranco/okectl/pkg/util"
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/core"
 )
@@ -24,7 +22,7 @@ const (
 	WorkerToControlPlane = 12250
 )
 
-/* Global variables */
+//Global variables
 var (
 	apiPort core.PortRange = core.PortRange{
 		Max: common.Int(K8sAPIPort),
@@ -48,13 +46,16 @@ var (
 	}
 )
 
-type Vcn struct {
-	Client        *core.VirtualNetworkClient
-	CompartmentID string
-	Ctx           context.Context
+//VcnClient allows to create an abstraction of the core.NewVirtualNetworkClientWithConfigurationProvider
+//to facilitate testing
+type VcnClient interface {
+	CreateVcn(context.Context, core.CreateVcnRequest) (core.CreateVcnResponse, error)
+	CreateRouteTable(context.Context, core.CreateRouteTableRequest) (core.CreateRouteTableResponse, error)
+	CreateInternetGateway(context.Context, core.CreateInternetGatewayRequest) (core.CreateInternetGatewayResponse, error)
+	CreateSecurityList(context.Context, core.CreateSecurityListRequest) (core.CreateSecurityListResponse, error)
+	CreateSubnet(context.Context, core.CreateSubnetRequest) (core.CreateSubnetResponse, error)
 }
 
-//Network to be used con virtual network ops
 type Network struct {
 	Name          string
 	CIDR          string
@@ -62,28 +63,28 @@ type Network struct {
 }
 
 //DescribeVcn returns vcn details of a given vcnID
-func (v Vcn) DescribeVcn(vcnID string) (core.Vcn, error) {
+/*func DescribeVcn(client VcnClient, vcnID string) (core.Vcn, error) {
 
 	req := core.GetVcnRequest{VcnId: common.String(vcnID)}
-	vcnDetail, err := v.Client.GetVcn(v.Ctx, req)
+	resp, err := client.GetVcn(context.Background(), req)
 	if err != nil {
 		return core.Vcn{}, err
 	}
-	return vcnDetail.Vcn, nil
-
+	return resp.Vcn, nil
 }
+*/
 
 //CreateVCN will deploy a vcn in a given compartmentID
-func (v Vcn) Create(net Network) (core.CreateVcnResponse, error) {
+func (n Network) CreateVCN(client VcnClient) (core.CreateVcnResponse, error) {
 
 	req := core.CreateVcnRequest{CreateVcnDetails: core.CreateVcnDetails{
-		CompartmentId: &v.CompartmentID,
-		CidrBlock:     &net.CIDR,
-		DisplayName:   &net.Name,
+		CompartmentId: &n.CompartmentID,
+		CidrBlock:     &n.CIDR,
+		DisplayName:   &n.Name,
 	},
 	}
 
-	resp, err := v.Client.CreateVcn(v.Ctx, req)
+	resp, err := client.CreateVcn(context.Background(), req)
 	if err != nil {
 		return core.CreateVcnResponse{}, err
 	}
@@ -91,16 +92,16 @@ func (v Vcn) Create(net Network) (core.CreateVcnResponse, error) {
 	return resp, nil
 }
 
-func (v Vcn) AddRouteTable(displayName, vcnID string, routes []core.RouteRule) (core.CreateRouteTableResponse, error) {
+func (n Network) AddRouteTable(client VcnClient, displayName, vcnID string, routes []core.RouteRule) (core.CreateRouteTableResponse, error) {
 	req := core.CreateRouteTableRequest{
 		CreateRouteTableDetails: core.CreateRouteTableDetails{
-			CompartmentId: &v.CompartmentID,
+			CompartmentId: &n.CompartmentID,
 			RouteRules:    routes,
 			VcnId:         &vcnID,
 			DisplayName:   &displayName,
 		},
 	}
-	resp, err := v.Client.CreateRouteTable(v.Ctx, req)
+	resp, err := client.CreateRouteTable(context.Background(), req)
 	if err != nil {
 		return core.CreateRouteTableResponse{}, err
 	}
@@ -108,18 +109,17 @@ func (v Vcn) AddRouteTable(displayName, vcnID string, routes []core.RouteRule) (
 }
 
 //AddInternetGateway will create a IG to allow access from the internet
-func (v Vcn) AddInternetGateway(vcnID, displayName string) (core.CreateInternetGatewayResponse, error) {
+func (n Network) AddInternetGateway(client VcnClient, vcnID, displayName string) (core.CreateInternetGatewayResponse, error) {
 
-	isenabled := true
 	req := core.CreateInternetGatewayRequest{
 		CreateInternetGatewayDetails: core.CreateInternetGatewayDetails{
-			CompartmentId: &v.CompartmentID,
-			IsEnabled:     &isenabled,
+			CompartmentId: &n.CompartmentID,
+			IsEnabled:     common.Bool(true),
 			VcnId:         &vcnID,
 			DisplayName:   &displayName,
 		},
 	}
-	resp, err := v.Client.CreateInternetGateway(v.Ctx, req)
+	resp, err := client.CreateInternetGateway(context.Background(), req)
 	if err != nil {
 		return core.CreateInternetGatewayResponse{}, err
 	}
@@ -229,10 +229,10 @@ func ClusterAPIEgressRules(workersCIDR []string) []core.EgressSecurityRule {
 	rules = append(rules, httpsOCI)
 	return rules
 }
-func (v Vcn) AddSecurityList(sl SecurityList) (core.CreateSecurityListResponse, error) {
+func (n Network) AddSecurityList(client VcnClient, sl SecurityList) (core.CreateSecurityListResponse, error) {
 	req := core.CreateSecurityListRequest{
 		CreateSecurityListDetails: core.CreateSecurityListDetails{
-			CompartmentId:        &v.CompartmentID,
+			CompartmentId:        &n.CompartmentID,
 			VcnId:                &sl.VcnID,
 			DisplayName:          &sl.Name,
 			EgressSecurityRules:  sl.EgressRule,
@@ -240,7 +240,7 @@ func (v Vcn) AddSecurityList(sl SecurityList) (core.CreateSecurityListResponse, 
 		},
 	}
 
-	resp, err := v.Client.CreateSecurityList(v.Ctx, req)
+	resp, err := client.CreateSecurityList(context.Background(), req)
 	if err != nil {
 		return core.CreateSecurityListResponse{}, err
 	}
@@ -248,11 +248,11 @@ func (v Vcn) AddSecurityList(sl SecurityList) (core.CreateSecurityListResponse, 
 }
 
 //AddSubnet will create a subnet for a given VCN
-func (v Vcn) AddSubnet(vcnID string, subnet Network, seclistIDs []string) (core.CreateSubnetResponse, error) {
+func (n Network) AddSubnet(client VcnClient, vcnID string, subnet Network, seclistIDs []string) (core.CreateSubnetResponse, error) {
 
 	req := core.CreateSubnetRequest{
 		CreateSubnetDetails: core.CreateSubnetDetails{
-			CompartmentId:   &v.CompartmentID,
+			CompartmentId:   &n.CompartmentID,
 			CidrBlock:       &subnet.CIDR,
 			VcnId:           &vcnID,
 			DisplayName:     &subnet.Name,
@@ -260,7 +260,7 @@ func (v Vcn) AddSubnet(vcnID string, subnet Network, seclistIDs []string) (core.
 		},
 	}
 
-	resp, err := v.Client.CreateSubnet(v.Ctx, req)
+	resp, err := client.CreateSubnet(context.Background(), req)
 	if err != nil {
 		return core.CreateSubnetResponse{}, err
 	}
@@ -273,23 +273,25 @@ func (v Vcn) AddSubnet(vcnID string, subnet Network, seclistIDs []string) (core.
 //* Internet Gateway (IG)
 //* NAT Gateway (NAT)
 //* Service Gateway (SGW)
-func QuickNetworking(vcn Vcn) error {
+/*
+func QuickNetworking(client VcnClient, compartmentID string) error {
 
-	/* VCN First */
+	//Random Naming is necessary
 	random := util.RandomInt(6)
+	// VCN First
 	net := Network{
 		Name:          defaultName + "_vcn_" + random,
 		CIDR:          defaultNetworkCIDR,
-		CompartmentID: vcn.CompartmentID,
+		CompartmentID: compartmentID,
 	}
 
 	fmt.Println("Creating VCN...")
-	vcnresp, err := vcn.Create(net)
+	resp, err := net.CreateVCN() //vcn.Create(net)
 	if err != nil {
 		return err
 	}
 
-	/* Security list */
+	//Security list
 	apiIngress := ClusterAPIIngressRules("0.0.0.0/0", []string{defaultWorkerCIDR})
 	fmt.Println(apiIngress)
 	apiEgress := ClusterAPIEgressRules([]string{defaultWorkerCIDR})
@@ -355,3 +357,4 @@ func QuickNetworking(vcn Vcn) error {
 	//Lets create a route table
 	return nil
 }
+*/
