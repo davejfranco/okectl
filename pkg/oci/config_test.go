@@ -104,7 +104,7 @@ func TestOkeClient(t *testing.T) {
 	}
 }
 
-func TestVcnClient(t *testing.T) {
+/*func TestVcnClient(t *testing.T) {
 	cfg_path := Config{} //config using default path and profile
 
 	cfg, err := cfg_path.Load()
@@ -118,7 +118,7 @@ func TestVcnClient(t *testing.T) {
 	if reflect.TypeOf(vcn) != reflect.TypeOf(core.VirtualNetworkClient{}) {
 		t.Errorf("Error: should be type %s", reflect.TypeOf(core.VirtualNetworkClient{}).String())
 	}
-}
+}*/
 
 func TestComputeClient(t *testing.T) {
 	cfg_path := Config{} //config using default path and profile

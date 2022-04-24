@@ -67,16 +67,6 @@ func OkeClient(config common.ConfigurationProvider) (containerengine.ContainerEn
 	return client, nil
 }
 
-//VcnClient creates a connection to Oracle virtual network
-func VcnClient(config common.ConfigurationProvider) (core.VirtualNetworkClient, error) {
-
-	client, err := core.NewVirtualNetworkClientWithConfigurationProvider(config)
-	if err != nil {
-		return core.VirtualNetworkClient{}, err
-	}
-	return client, nil
-}
-
 //ComputeClient given a config provider returns a client for computeclient
 func ComputeClient(config common.ConfigurationProvider) (core.ComputeClient, error) {
 
