@@ -2,6 +2,7 @@ package util
 
 import (
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -68,4 +69,11 @@ func HexaMask(hexa string) string {
 		return string("32")
 	}
 	return ""
+}
+
+//
+func OCIDvalidator(ocid string) bool {
+	//regex := "ocid1.(tenancy|vcn|intance|privateip).oc1(..|phx|iad|)[a-zA-Z0-9]*"
+	regex, _ := regexp.Compile("ocid1.(tenancy|vcn|intance|vnic|oke).oc1.(..|phx|iad|).[a-zA-Z0-9]*$")
+	return regex.Match([]byte(ocid))
 }
