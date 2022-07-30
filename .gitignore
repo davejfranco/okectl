@@ -6,4 +6,8 @@ pkg/*/*.tfstate.backup
 pkg/*/.terraform
 .vscode/
 test/
+pkg/terraform/terraform/*
 
+# vendor directory 
+vendor
+vendor/modules.txt
