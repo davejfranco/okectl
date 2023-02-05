@@ -1,13 +1,4 @@
-pkg/*/*.tf
-pkg/*/*.tf.json
-pkg/*/*.tfvars
-pkg/*/*.tfstate
-pkg/*/*.tfstate.backup
-pkg/*/.terraform
+#local development
 .vscode/
-test/
-pkg/terraform/terraform/*
+terraform/
 
-# vendor directory 
-vendor
-vendor/modules.txt
