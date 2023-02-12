@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/davejfranco/okectl/cmd/create"
+	"github.com/davejfranco/okectl/cmd/delete"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +37,7 @@ func Execute() {
 
 func addSubCommands() {
 	rootCmd.AddCommand(create.CreateCmd)
+	rootCmd.AddCommand(delete.DeleteCmd)
 }
 func init() {
 	// Here you will define your flags and configuration settings.

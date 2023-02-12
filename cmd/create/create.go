@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package create
 
 import (
@@ -18,7 +15,6 @@ var CreateCmd = &cobra.Command{
 }
 
 func init() {
-	//rootCmd.AddCommand(createCmd)
 
 	// Here you will define your flags and configuration settings.
 
