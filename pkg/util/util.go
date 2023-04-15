@@ -5,56 +5,19 @@ import (
 	"net/netip"
 	"regexp"
 	"strings"
-	"time"
 )
 
-const (
-	// LowerLetters is the list of lowercase letters.
-	LowerLetters = "abcdefghijklmnopqrstuvwxyz"
-
-	// UpperLetters is the list of uppercase letters.
-	UpperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-	// Digits is the list of permitted digits.
-	Digits = "0123456789"
-
-	// KeyLength is the length of the Key
-	//KeyLength = 10
-)
-
-//RandomKey returns a ramdom alphanumeric string
-func RandomKey(keylength int) string {
-
-	rand.Seed(time.Now().UnixNano())
-
-	chars := []rune(LowerLetters +
-		UpperLetters +
-		Digits)
-
-	var b strings.Builder
-	for i := 0; i < keylength; i++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
+// RandomString returns a random string of length n
+func RandomString(length int) string {
+	var letter = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letter[rand.Intn(len(letter))]
 	}
-	str := b.String()
-
-	return str
+	return string(b)
 }
 
-func RandomInt(length int) string {
-	rand.Seed(time.Now().UnixNano())
-
-	chars := []rune(Digits)
-
-	var b strings.Builder
-	for i := 0; i < length; i++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
-	}
-	str := b.String()
-
-	return str
-}
-
-//HexaMask returns CIDR mask in format /16 from ffff0000 format
+// HexaMask returns CIDR mask in format /16 from ffff0000 format
 func HexaMask(hexa string) string {
 
 	n := strings.Count(hexa, "0")
@@ -72,7 +35,6 @@ func HexaMask(hexa string) string {
 	return ""
 }
 
-//
 func OCIDvalidator(ocid string) bool {
 	//regex := "ocid1.(tenancy|vcn|intance|privateip).oc1(..|phx|iad|)[a-zA-Z0-9]*"
 	regex, _ := regexp.Compile("ocid1.(tenancy|compartment|vcn|intance|vnic|oke).oc1.(..|phx|iad|).[a-zA-Z0-9]*$")
