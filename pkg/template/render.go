@@ -1,4 +1,4 @@
-package resourcemanager
+package template
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	cidrBlock        = "10.0.0.0/16"
+	CidrBlock        = "10.0.0.0/16"
 	templateLocation = "pkg/resourcemanager/files/main.tf.tmpl"
 )
 
@@ -15,11 +15,17 @@ type Cluster struct {
 	Version string
 }
 
+type ShapeConfig struct {
+	RAM string
+	CPU string
+}
+
 type NodePool struct {
-	Name  string
-	Shape string
-	Image string
-	Size  string
+	Name        string
+	Shape       string
+	ImageID     string
+	Size        string
+	ShapeConfig ShapeConfig
 }
 
 // Template struct
@@ -29,6 +35,23 @@ type Template struct {
 	CompartmentID string
 	Cluster       Cluster
 	NodePool      NodePool
+}
+
+func (t Template) Generate() Template {
+
+	if t.CidrBlock == "" {
+		t.CidrBlock = CidrBlock
+	}
+
+	if t.Cluster.Name == "" {
+		t.Cluster.Name = "okectl"
+	}
+
+	if t.Cluster.Version == "" {
+		t.Cluster.Version = "1.24" //TODO: Get the latest version from the API
+	}
+
+	return t
 }
 
 // RenderFile renders a template file located in the files/main.tf.tmpl
