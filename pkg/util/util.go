@@ -1,11 +1,18 @@
 package util
 
 import (
+	"log"
 	"math/rand"
 	"net/netip"
 	"regexp"
 	"strings"
 )
+
+func FatalIfError(err error) {
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+}
 
 // RandomString returns a random string of length n
 func RandomString(length int) string {
