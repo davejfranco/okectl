@@ -1,12 +1,13 @@
-package oke
+package oci
 
 import (
-	"context"
-	"fmt"
-	"okectl/pkg/util"
-
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/containerengine"
+)
+
+const (
+	// This year
+	currentYear = "2023"
 )
 
 type Options struct {
@@ -23,20 +24,4 @@ func NewOKEClient(options ...*Options) (containerengine.ContainerEngineClient, e
 	}
 	// Return client with specified profile
 	return containerengine.NewContainerEngineClientWithConfigurationProvider(common.DefaultConfigProvider())
-}
-
-// GetKubernetesVersion returns a list of available Kubernetes versions
-func GetKubernetesVersion(client containerengine.ContainerEngineClient) []string {
-	getClusterOptionsReq := containerengine.GetClusterOptionsRequest{
-		ClusterOptionId: common.String("all"),
-	}
-	getClusterOptionsResp, err := client.GetClusterOptions(context.Background(), getClusterOptionsReq)
-	util.FatalIfError(err)
-	kubernetesVersion := getClusterOptionsResp.KubernetesVersions
-
-	if len(kubernetesVersion) < 1 {
-		fmt.Println("Kubernetes version not available")
-	}
-
-	return kubernetesVersion
 }
