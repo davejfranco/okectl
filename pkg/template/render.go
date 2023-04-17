@@ -7,7 +7,7 @@ import (
 
 const (
 	CidrBlock        = "10.0.0.0/16"
-	templateLocation = "pkg/resourcemanager/files/main.tf.tmpl"
+	templateLocation = "pkg/template/files/main.tf.tmpl"
 )
 
 type Cluster struct {
