@@ -1,9 +1,12 @@
 package util
 
 import (
+	"archive/zip"
+	"io"
 	"log"
 	"math/rand"
 	"net/netip"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -51,8 +54,54 @@ func OCIDvalidator(ocid string) bool {
 func IsvalidCIDR(cidr string) bool {
 	//validate CIDR
 	_, err := netip.ParsePrefix(cidr)
+
 	if err != nil {
 		return false
 	}
 	return true
+}
+
+// Create Zip file from a file path
+func CreateZipFile(filePath string) error {
+
+	zipfile, err := os.Create("stack.zip")
+	if err != nil {
+		return err
+	}
+
+	defer zipfile.Close()
+
+	// Create a new zip writer
+	zipWriter := zip.NewWriter(zipfile)
+	defer zipWriter.Close()
+
+	// Open the file to be zipped
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Add the file to the zip archive
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(fileInfo)
+	if err != nil {
+		return err
+	}
+
+	header.Method = zip.Deflate
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
