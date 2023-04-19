@@ -17,7 +17,6 @@ func (c *Config) configProvider() common.ConfigurationProvider {
 		return common.CustomProfileConfigProvider(c.Profile, "")
 	}
 	return common.DefaultConfigProvider()
-
 }
 
 // create client using config in default location
