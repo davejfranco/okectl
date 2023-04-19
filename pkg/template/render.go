@@ -1,13 +1,13 @@
 package template
 
 import (
+	"fmt"
 	"os"
 	"text/template"
 )
 
 const (
-	CidrBlock        = "10.0.0.0/16"
-	templateLocation = "pkg/template/files/main.tf.tmpl"
+	CidrBlock string = "10.0.0.0/16"
 )
 
 type Cluster struct {
@@ -56,6 +56,13 @@ func (t Template) Generate() Template {
 
 // RenderFile renders a template file located in the files/main.tf.tmpl
 func RenderFile(t Template) error {
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	templateLocation := fmt.Sprintf("%s/%s", currentDir, "files/main.tf.tmpl") //"files/main.tf.tmpl"
 	//Open the template file
 	templateFile, err := os.Open(templateLocation)
 	if err != nil {
