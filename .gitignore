@@ -1,4 +1,6 @@
 #local development
 .vscode/
 terraform/
+*.zip
+main.tf
 
