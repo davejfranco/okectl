@@ -1,6 +1,9 @@
 package template
 
 import (
+	"archive/zip"
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"text/template"
@@ -32,6 +35,7 @@ type NodePool struct {
 type Template struct {
 	CidrBlock     string
 	Random        string
+	Region        string
 	CompartmentID string
 	Cluster       Cluster
 	NodePool      NodePool
@@ -62,7 +66,9 @@ func RenderFile(t Template) error {
 		return err
 	}
 
-	templateLocation := fmt.Sprintf("%s/%s", currentDir, "files/main.tf.tmpl") //"files/main.tf.tmpl"
+	var renderedfile string = fmt.Sprintf("%s/%s", currentDir, "renderedmain.tf")
+
+	templateLocation := fmt.Sprintf("%s/%s", currentDir, "pkg/template/files/main.tf.tmpl")
 	//Open the template file
 	templateFile, err := os.Open(templateLocation)
 	if err != nil {
@@ -78,7 +84,7 @@ func RenderFile(t Template) error {
 	}
 
 	// Create a new file to write the rendered Terraform code to
-	file, err := os.Create("main.tf")
+	file, err := os.Create(renderedfile)
 	if err != nil {
 		panic(err)
 	}
@@ -91,4 +97,61 @@ func RenderFile(t Template) error {
 	}
 
 	return nil
+}
+
+func ZipAndEncodeTemplate(t Template) (string, error) {
+	// Buffer to store the compressed data
+	var zipBuffer bytes.Buffer
+
+	// zip writer
+	zipWriter := zip.NewWriter(&zipBuffer)
+
+	// Create a new zip file header
+	fileHeader := &zip.FileHeader{
+		Name:   "main.tf",
+		Method: zip.Deflate,
+	}
+
+	// Open a writer for the zip file
+	zipFileWriter, err := zipWriter.CreateHeader(fileHeader)
+	if err != nil {
+		return "", err
+	}
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	templateLocation := fmt.Sprintf("%s/%s", currentDir, "pkg/template/files/main.tf.tmpl")
+	//Open the template file
+	templateFile, err := os.Open(templateLocation)
+	if err != nil {
+		return "", err
+	}
+
+	defer templateFile.Close()
+
+	// Parse the template file
+	tmpl, err := template.ParseFiles(templateLocation)
+	if err != nil {
+		return "", err
+	}
+
+	err = tmpl.Execute(zipFileWriter, t)
+	if err != nil {
+		return "", err
+	}
+
+	// Close the zip writer
+	err = zipWriter.Close()
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the buffer's contents using base64 encoding
+	base64Encoded := base64.StdEncoding.EncodeToString(zipBuffer.Bytes())
+
+	return base64Encoded, nil
+
 }

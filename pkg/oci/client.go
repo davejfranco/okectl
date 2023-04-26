@@ -1,6 +1,8 @@
 package oci
 
 import (
+	"context"
+
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/containerengine"
 	"github.com/oracle/oci-go-sdk/resourcemanager"
@@ -28,10 +30,23 @@ func (c *Config) OKE() (containerengine.ContainerEngineClient, error) {
 	return client, nil
 }
 
+// Resource Manager
 func (c *Config) ResourceManager() (resourcemanager.ResourceManagerClient, error) {
 	client, err := resourcemanager.NewResourceManagerClientWithConfigurationProvider(c.configProvider())
 	if err != nil {
 		return resourcemanager.ResourceManagerClient{}, err
 	}
 	return client, nil
+}
+
+type ResourceManager struct {
+	Client resourcemanager.ResourceManagerClient
+}
+
+func (rm ResourceManager) CreateStack(ctx context.Context, req resourcemanager.CreateStackRequest) (resourcemanager.CreateStackResponse, error) {
+	return rm.Client.CreateStack(ctx, req)
+}
+
+func (rm ResourceManager) DeleteStack(ctx context.Context, req resourcemanager.DeleteStackRequest) (resourcemanager.DeleteStackResponse, error) {
+	return rm.Client.DeleteStack(ctx, req)
 }

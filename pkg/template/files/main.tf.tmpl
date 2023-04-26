@@ -1,4 +1,6 @@
-provider "oci" {}
+provider "oci" {
+  region = "{{.Region}}"
+}
 
 data "oci_core_services" "this" {}
 
@@ -30,7 +32,7 @@ resource "oci_core_service_gateway" "generated_oci_core_service_gateway" {
   compartment_id = "{{.CompartmentID}}"
   display_name   = "{{.Cluster.Name}}-sgw"
   services {
-    service_id = [for svc in data.oci_core_services.services.this : svc.id if svc.name == "All IAD Services In Oracle Services Network"][0]
+    service_id = [for  svc  in  data.oci_core_services.this : svc.id if svc.name == "All IAD Services In Oracle Services Network"][0]
   }
   vcn_id = oci_core_vcn.generated_oci_core_vcn.id
 }
