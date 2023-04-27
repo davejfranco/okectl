@@ -8,6 +8,7 @@ import (
 	"github.com/oracle/oci-go-sdk/resourcemanager"
 )
 
+// Config
 type Config struct {
 	Profile        string
 	ConfigLocation string
@@ -21,6 +22,7 @@ func (c *Config) configProvider() common.ConfigurationProvider {
 	return common.DefaultConfigProvider()
 }
 
+// Container Engine
 // create client using config in default location
 func (c *Config) OKE() (containerengine.ContainerEngineClient, error) {
 	client, err := containerengine.NewContainerEngineClientWithConfigurationProvider(c.configProvider())
@@ -41,6 +43,10 @@ func (c *Config) ResourceManager() (resourcemanager.ResourceManagerClient, error
 
 type ResourceManager struct {
 	Client resourcemanager.ResourceManagerClient
+}
+
+func (rm ResourceManager) ListStacks(ctx context.Context, request resourcemanager.ListStacksRequest) (resourcemanager.ListStacksResponse, error) {
+	return rm.Client.ListStacks(ctx, request)
 }
 
 func (rm ResourceManager) CreateStack(ctx context.Context, req resourcemanager.CreateStackRequest) (resourcemanager.CreateStackResponse, error) {
