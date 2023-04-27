@@ -32,7 +32,7 @@ resource "oci_core_service_gateway" "generated_oci_core_service_gateway" {
   compartment_id = "{{.CompartmentID}}"
   display_name   = "{{.Cluster.Name}}-sgw"
   services {
-    service_id = [for  svc  in  data.oci_core_services.this : svc.id if svc.name == "All IAD Services In Oracle Services Network"][0]
+    service_id = [for  svc  in  data.oci_core_services.this.services : svc.id if svc.name == "All IAD Services In Oracle Services Network"][0]
   }
   vcn_id = oci_core_vcn.generated_oci_core_vcn.id
 }
@@ -255,6 +255,13 @@ resource "oci_core_security_list" "kubernetes_api_endpoint_sec_list" {
   vcn_id = oci_core_vcn.generated_oci_core_vcn.id
 }
 
+data "oci_containerengine_cluster_option" "this" {
+    #Required
+    cluster_option_id = "all"
+    #Optional
+    compartment_id = "{{.CompartmentID}}"
+}
+
 resource "oci_containerengine_cluster" "generated_oci_containerengine_cluster" {
   compartment_id = "{{.CompartmentID}}"
   endpoint_config {
@@ -264,7 +271,14 @@ resource "oci_containerengine_cluster" "generated_oci_containerengine_cluster" {
   freeform_tags = {
     "OKEclusterName" = "{{.Cluster.Name}}"
   }
+  //if kubernetes version is not set
+  //the latest version will be used
+  {{if eq .Cluster.Version ""}}
+  kubernetes_version = element(data.oci_containerengine_cluster_option.this.kubernetes_versions,
+    length(data.oci_containerengine_cluster_option.this.kubernetes_versions) - 1)
+  {{else}}
   kubernetes_version = "{{.Cluster.Version}}"
+  {{end}}
   name               = "{{.Cluster.Name}}"
   options {
     admission_controller_options {
