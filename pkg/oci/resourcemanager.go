@@ -2,6 +2,7 @@ package oci
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/resourcemanager"
@@ -26,7 +27,7 @@ type Stack struct {
 }
 
 // Get stack info by its name
-func (s *Stack) Get() (resourcemanager.StackSummary, error) {
+func (s *Stack) findStack() (resourcemanager.StackSummary, error) {
 	req := resourcemanager.ListStacksRequest{
 		CompartmentId: &s.CompartmentID,
 		DisplayName:   &s.Name,
@@ -42,19 +43,26 @@ func (s *Stack) Get() (resourcemanager.StackSummary, error) {
 }
 
 // DeleteStack deletes a stack
-func (s *Stack) Delete(stackID string) error {
+func (s *Stack) Delete(stackName string) error {
 
-	getStack, err := s.Get()
-	if err != nil {
+	getStack, err := s.findStack()
+	// Check if stack exists or throw error
+	switch {
+	case err != nil:
 		return err
-	
+	case getStack.Id == nil:
+		return fmt.Errorf("stack %s not found", stackName)
+	}
+
 	req := resourcemanager.DeleteStackRequest{
-		StackId: &stackID,
+		StackId: getStack.Id,
 	}
-	_, err := s.Client.DeleteStack(context.Background(), req)
+
+	_, err = s.Client.DeleteStack(context.Background(), req)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
