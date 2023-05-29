@@ -14,8 +14,9 @@ const (
 )
 
 type Cluster struct {
-	Name    string
-	Version string
+	Name          string
+	Version       string
+	CompartmentID string
 }
 
 type ShapeConfig struct {
@@ -29,6 +30,13 @@ type NodePool struct {
 	ImageID     string
 	Size        string
 	ShapeConfig ShapeConfig
+}
+
+type VCN struct {
+	Name          string
+	CidrBlock     string
+	Region        string
+	CompartmentID string
 }
 
 // Template struct
