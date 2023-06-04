@@ -2,28 +2,45 @@ package create
 
 import (
 	"fmt"
+	"okectl/pkg/ctl"
+	"okectl/pkg/oci"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	clusterName string
-	region      string
-	filePath    string
+	clusterName   string
+	compartmentID string
+	k8sVersion    string
+	filePath      string
 )
 
 // clusterCmd represents the cluster command
 var clusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "this command creates a cluster",
+	Long: `Create a cluster using the following command:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+okectl create cluster --name <cluster-name> --compartment-id <compartment-id>
+or
+okectl create cluster -f <cluster-config-file>.yaml`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if filePath == "" {
+			cmd.MarkFlagRequired("compartment-id")
+			cmd.MarkFlagRequired("name")
+			cmd.SetUsageTemplate(fmt.Sprintf("%s\nRequired flags:\n  -c, --compartment-id\n  -n, --name\n", cmd.UsageString()))
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		if filePath != "" {
+			ctl.CreateClusterFromFile(filePath)
+			return
+		}
+		if k8sVersion == "" {
+			availableVersions := oci.GetKubernetesVersion()
+			k8sVersion = availableVersions[len(availableVersions)-1]
+		}
+		ctl.CreateCluster(clusterName, compartmentID, k8sVersion)
 	},
 }
 
@@ -31,24 +48,14 @@ func init() {
 
 	//Cluster name
 	clusterCmd.Flags().StringVarP(&clusterName, "name", "n", "", "Name of the cluster to create")
-	if err := clusterCmd.MarkFlagRequired("name"); err != nil {
-		fmt.Println(err)
-	}
-	//Cluster region
-	clusterCmd.Flags().StringVarP(&region, "region", "r", "", "Region to create the cluster in")
+	//Compartment ID
+	clusterCmd.Flags().StringVarP(&compartmentID, "compartment-id", "c", "", "The OCID of the compartment where the cluster will be created")
+	//Kubernetes Cluster version
+	clusterCmd.Flags().StringVarP(&k8sVersion, "version", "v", "", "Version of kubernetes to use. If is not provided, the latest version will be used")
+
 	//Cluster config file
 	clusterCmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to the cluster config file")
-
-	//rootCmd.AddCommand(clusterCmd)
+	//Add commands to create pallet
 	CreateCmd.AddCommand(clusterCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// clusterCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// clusterCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

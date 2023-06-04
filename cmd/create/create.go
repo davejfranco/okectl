@@ -7,8 +7,8 @@ import (
 // createCmd represents the create command
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create cluster resources",
-	Long:  `deploy a new cluster or create a new resource in an existing cluster`,
+	Short: "create resources using cli",
+	Long:  `create resources like clusters and nodepools using cli`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

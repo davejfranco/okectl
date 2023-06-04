@@ -4,23 +4,29 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"okectl/cmd/create"
+	"okectl/cmd/delete"
 	"os"
 
-	"github.com/davejfranco/okectl/cmd/create"
-	"github.com/davejfranco/okectl/cmd/delete"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "okectl",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "A command line tool for managing OKE clusters",
+	Long: `A command line tool for managing OKE clusters.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+You will be able to perform the following operations:
+- Create a cluster
+- Delete a cluster
+- Scale a cluster
+- Upgrade a cluster
+- Get cluster details
+- Get cluster kubeconfig
+
+For more information, please visit
+https://github.com/davejfranco/okectl`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },

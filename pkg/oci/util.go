@@ -12,7 +12,15 @@ import (
 )
 
 // GetKubernetesVersion returns a list of available Kubernetes versions
-func GetKubernetesVersion(client containerengine.ContainerEngineClient) []string {
+func GetKubernetesVersion() []string {
+
+	config := Config{
+		Profile: "DEFAULT",
+	}
+
+	client, err := config.Oke()
+	util.FatalIfError(err)
+
 	getClusterOptionsReq := containerengine.GetClusterOptionsRequest{
 		ClusterOptionId: common.String("all"),
 	}
