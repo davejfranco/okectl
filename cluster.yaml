@@ -1,0 +1,6 @@
+---
+clusterName: myCluster
+compartmentID: ocid1.compartment.oc1..aaaaaaaaxxxxxxxxxx
+kubernetesVersion: v1.26.2 #if version is not provided, latest version will be used
+
+
