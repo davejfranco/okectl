@@ -91,14 +91,14 @@ func (s *Stack) Create(zipfile string) (resourcemanager.CreateStackResponse, err
 	return resp, nil
 }
 
-func (s *Stack) Job(stackID, action string) (string, error) {
+func (s *Stack) Job(action string) (string, error) {
 
 	switch action {
 	case "plan", "apply", "destroy":
 
 		req := resourcemanager.CreateJobRequest{
 			CreateJobDetails: resourcemanager.CreateJobDetails{
-				StackId:   &stackID,
+				StackId:   &s.id,
 				Operation: resourcemanager.JobOperationEnum(strings.ToUpper(action)),
 				ApplyJobPlanResolution: &resourcemanager.ApplyJobPlanResolution{
 					IsAutoApproved: common.Bool(true), //for now this will be auto approved
@@ -110,7 +110,7 @@ func (s *Stack) Job(stackID, action string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return *resp.Id, nil
+		return *resp.Id, nil //it returns the job id
 
 	default:
 		return "", errors.New("invalid action")

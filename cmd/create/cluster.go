@@ -3,7 +3,6 @@ package create
 import (
 	"fmt"
 	"okectl/pkg/ctl"
-	"okectl/pkg/oci"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -14,6 +13,7 @@ var (
 	clusterName   string
 	compartmentID string
 	k8sVersion    string
+	region        string
 	cfgfile       string
 )
 
@@ -35,23 +35,23 @@ okectl create cluster -f <cluster-config-file>.yaml`,
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if cfgfile != "" {
-			if clusterName = viper.GetViper().GetString("clusterName"); clusterName == "" {
-				fmt.Println("Cluster name is required")
+			clusterDetails := viper.GetViper().GetStringMapString("cluster")
+			if len(clusterDetails) == 0 {
+				fmt.Println("Cluster details are required")
 				os.Exit(1)
 			}
 
-			if compartmentID = viper.GetViper().GetString("compartmentID"); compartmentID == "" {
-				fmt.Println("Compartment ID is required")
-				os.Exit(1)
-			}
+			clusterName = clusterDetails["name"]
+			compartmentID = clusterDetails["compartmentid"] //maps remove the uppercase from the key
+			k8sVersion = clusterDetails["version"]
+			region = clusterDetails["region"]
 
-			//Set latest version if not provided
-			if k8sVersion = viper.GetViper().GetString("kubernetesVersion"); k8sVersion == "" {
-				availableVersions := oci.GetKubernetesVersion()
-				k8sVersion = availableVersions[len(availableVersions)-1]
+			if clusterName == "" || compartmentID == "" {
+				fmt.Println("cluster name and compartment id are required")
+				os.Exit(1)
 			}
 		}
-		ctl.CreateCluster(clusterName, compartmentID, k8sVersion)
+		ctl.NewCluster(clusterName, compartmentID, k8sVersion, region)
 	},
 }
 
@@ -63,7 +63,8 @@ func init() {
 	clusterCmd.Flags().StringVarP(&compartmentID, "compartment-id", "c", "", "The OCID of the compartment where the cluster will be created")
 	//Kubernetes Cluster version
 	clusterCmd.Flags().StringVarP(&k8sVersion, "version", "v", "", "Version of kubernetes to use. If is not provided, the latest version will be used")
-
+	//Cluster region
+	clusterCmd.Flags().StringVarP(&region, "region", "r", "", "Region where the cluster will be created")
 	//Cluster config file
 	clusterCmd.Flags().StringVarP(&cfgfile, "config-file", "f", "", "Path to the cluster config file")
 	//Add commands to create pallet

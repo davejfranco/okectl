@@ -3,4 +3,5 @@
 terraform/
 *.zip
 main.tf
-
+.okectl/
+cluster.yaml

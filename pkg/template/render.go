@@ -10,7 +10,13 @@ import (
 )
 
 const (
-	CidrBlock string = "10.0.0.0/16"
+	CidrBlock       string = "10.0.0.0/16"
+	NodePoolName    string = "NP1"
+	NodePoolShape   string = "VM.Standard.E3.Flex"
+	NodePoolSize    string = "1"
+	NodePoolImageID string = "ocid1.image.oc1.iad.aaaaaaaas2zhgcuhfarrwqxow4ffdrllxbfqkm32b4y3bovmatntgjvv56va"
+	NodePoolRAM     string = "8"
+	NodePoolCPU     string = "2"
 )
 
 type Cluster struct {
@@ -74,7 +80,8 @@ func RenderFile(t Template) error {
 		return err
 	}
 
-	var renderedfile string = fmt.Sprintf("%s/%s", currentDir, "renderedmain.tf")
+	dir := okectlDir() //Check if the .okectl directory exists and create it if it doesn't
+	var renderedfile string = fmt.Sprintf("%s/%s", dir, "main.tf")
 
 	templateLocation := fmt.Sprintf("%s/%s", currentDir, "pkg/template/files/main.tf.tmpl")
 	//Open the template file
