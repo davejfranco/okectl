@@ -15,14 +15,14 @@ const (
 
 type Stack struct {
 	id               string
-	client           RMClient
+	client           resourcemanager.ResourceManagerClient //RMClient just for testing
 	Name             string
 	CompartmentID    string
 	TerraformVersion string
 }
 
 // NewStack creates a new stack
-func NewStack(client RMClient) *Stack {
+func NewStack(client resourcemanager.ResourceManagerClient) *Stack {
 	return &Stack{
 		client:           client,
 		TerraformVersion: tf_version,
@@ -30,7 +30,7 @@ func NewStack(client RMClient) *Stack {
 }
 
 // Get stack info by its name
-func GetStack(name, compartmenID string, client RMClient) (*Stack, error) {
+func GetStack(name, compartmenID string, client resourcemanager.ResourceManagerClient) (*Stack, error) {
 	req := resourcemanager.ListStacksRequest{
 		CompartmentId: &compartmenID,
 		DisplayName:   &name,

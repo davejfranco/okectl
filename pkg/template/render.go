@@ -14,13 +14,14 @@ const (
 	NodePoolName    string = "NP1"
 	NodePoolShape   string = "VM.Standard.E3.Flex"
 	NodePoolSize    string = "1"
-	NodePoolImageID string = "ocid1.image.oc1.iad.aaaaaaaas2zhgcuhfarrwqxow4ffdrllxbfqkm32b4y3bovmatntgjvv56va"
-	NodePoolRAM     string = "8"
-	NodePoolCPU     string = "2"
+	NodePoolImageID string = "ocid1.image.oc1.iad.aaaaaaaaqvn4ubp2zfm5xagjaelgeg6vwrbru6hfpocmqrqxiidkp5tstqiq"
+	NodePoolRAM     string = "2"
+	NodePoolCPU     string = "1"
 )
 
 type Cluster struct {
 	Name          string
+	Type          string //Either BASIC_CLUSTER or ENHANCED_CLUSTER
 	Version       string
 	CompartmentID string
 }

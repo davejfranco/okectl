@@ -2,7 +2,6 @@ package oci
 
 import (
 	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/containerengine"
 	"github.com/oracle/oci-go-sdk/resourcemanager"
 )
 
@@ -64,16 +63,6 @@ func (c *Config) ResourceManager() (resourcemanager.ResourceManagerClient, error
 	client, err := resourcemanager.NewResourceManagerClientWithConfigurationProvider(c.provider)
 	if err != nil {
 		return resourcemanager.ResourceManagerClient{}, err
-	}
-	return client, nil
-}
-
-// Container Engine
-// create client using config in default location
-func (c *Config) Oke() (containerengine.ContainerEngineClient, error) {
-	client, err := containerengine.NewContainerEngineClientWithConfigurationProvider(c.provider)
-	if err != nil {
-		return containerengine.ContainerEngineClient{}, err
 	}
 	return client, nil
 }

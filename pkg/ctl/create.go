@@ -1,6 +1,7 @@
 package ctl
 
 import (
+	"errors"
 	"fmt"
 	"okectl/pkg/oci"
 	"okectl/pkg/template"
@@ -8,22 +9,18 @@ import (
 	"os"
 )
 
-func NewCluster(clusterName, compartmentID, k8sVersion, region string) {
+// New Config
+var config = oci.NewConfigProvider("", "")
 
-	//New Config
-	config := oci.NewConfigProvider("", "")
-	//Check kubernetes version
-	availableVersions := oci.GetKubernetesVersion(config)
-	//Don't know if I'll leave this here
-	var counter int = 0
-	for _, v := range availableVersions {
-		if v == k8sVersion {
-			break
-		}
-		counter++
+func NewCluster(clusterName, compartmentID, k8sVersion, region string) error {
+
+	okeClient, err := config.Oke()
+	if err != nil {
+		return err
 	}
-	if counter == len(availableVersions) {
-		k8sVersion = availableVersions[len(availableVersions)-1] //return latest available version
+	//Check if cluster version is valid
+	if !oci.IsValidKubernetesVersion(k8sVersion, &okeClient) {
+		return errors.New("invalid kubernetes version") //TODO: Return error
 	}
 
 	if region == "" {
@@ -52,9 +49,11 @@ func NewCluster(clusterName, compartmentID, k8sVersion, region string) {
 		},
 	}
 
-	/*if err := template.RenderFile(t); err != nil {
-		panic(err)
-	}*/
+	//Generate the main.tf file
+	if err := template.RenderFile(t); err != nil {
+		return err
+	}
+
 	zipFile, err := template.ZipAndEncodeTemplate(t)
 	if err != nil {
 		fmt.Println(err)
@@ -84,7 +83,7 @@ func NewCluster(clusterName, compartmentID, k8sVersion, region string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
+	return nil
 }
 
 func NewNodePool() {
