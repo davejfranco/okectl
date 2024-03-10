@@ -1,12 +1,12 @@
 package ctl
 
 import (
-	"errors"
 	"fmt"
+  "os"
+  "errors"
 	"okectl/pkg/oci"
 	"okectl/pkg/template"
 	"okectl/pkg/util"
-	"os"
 )
 
 // New Config
@@ -54,7 +54,7 @@ func NewCluster(clusterName, compartmentID, k8sVersion, region string) error {
 		return err
 	}
 
-	zipFile, err := template.ZipAndEncodeTemplate(t)
+	zipFile, err := t.RenderToEncodedZip()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

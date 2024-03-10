@@ -17,6 +17,9 @@ const (
 	NodePoolImageID string = "ocid1.image.oc1.iad.aaaaaaaaqvn4ubp2zfm5xagjaelgeg6vwrbru6hfpocmqrqxiidkp5tstqiq"
 	NodePoolRAM     string = "2"
 	NodePoolCPU     string = "1"
+
+	DefaultRegion          string = "us-ashburn-1"
+	DefultTemplateLocation string = "pkg/template/files/main.tf.tmpl"
 )
 
 type Cluster struct {
@@ -40,26 +43,25 @@ type NodePool struct {
 }
 
 type VCN struct {
+	ID            string
 	Name          string
 	CidrBlock     string
-	Region        string
 	CompartmentID string
 }
 
 // Template struct
 type Template struct {
-	CidrBlock     string
-	Random        string
-	Region        string
-	CompartmentID string
-	Cluster       Cluster
-	NodePool      NodePool
+	Vcn              VCN
+	Cluster          Cluster
+	NodePool         NodePool
+	CompartmentID    string
+	TemplateLocation string
 }
 
 func (t Template) Generate() Template {
 
-	if t.CidrBlock == "" {
-		t.CidrBlock = CidrBlock
+	if t.Vcn.CidrBlock == "" {
+		t.Vcn.CidrBlock = CidrBlock
 	}
 
 	if t.Cluster.Name == "" {
@@ -73,8 +75,8 @@ func (t Template) Generate() Template {
 	return t
 }
 
-// RenderFile renders a template file located in the files/main.tf.tmpl
-func RenderFile(t Template) error {
+// RenderToFile renders the template to a file, I'll leave this here for now
+func (t Template) RenderToFile() error {
 
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -84,7 +86,8 @@ func RenderFile(t Template) error {
 	dir := okectlDir() //Check if the .okectl directory exists and create it if it doesn't
 	var renderedfile string = fmt.Sprintf("%s/%s", dir, "main.tf")
 
-	templateLocation := fmt.Sprintf("%s/%s", currentDir, "pkg/template/files/main.tf.tmpl")
+	templateLocation := fmt.Sprintf("%s/%s", currentDir, t.TemplateLocation)
+
 	//Open the template file
 	templateFile, err := os.Open(templateLocation)
 	if err != nil {
@@ -113,9 +116,12 @@ func RenderFile(t Template) error {
 	}
 
 	return nil
+
 }
 
-func ZipAndEncodeTemplate(t Template) (string, error) {
+// RenderToEncodedZip renders the template to a zip file and returns the base64 encoded string
+// This is a requirement for the OCI SDK Resouce Manager
+func (t Template) RenderToEncodedZip() (string, error) {
 	// Buffer to store the compressed data
 	var zipBuffer bytes.Buffer
 
@@ -139,7 +145,7 @@ func ZipAndEncodeTemplate(t Template) (string, error) {
 		return "", err
 	}
 
-	templateLocation := fmt.Sprintf("%s/%s", currentDir, "pkg/template/files/main.tf.tmpl")
+	templateLocation := fmt.Sprintf("%s/%s", currentDir, t.TemplateLocation)
 	//Open the template file
 	templateFile, err := os.Open(templateLocation)
 	if err != nil {
